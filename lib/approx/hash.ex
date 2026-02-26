@@ -1,4 +1,4 @@
-defmodule Sketch.Hash do
+defmodule Approx.Hash do
   @moduledoc false
 
   # Shared hash helpers for probabilistic data structures.

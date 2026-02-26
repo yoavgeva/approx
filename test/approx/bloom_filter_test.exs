@@ -1,11 +1,11 @@
-defmodule Sketch.BloomFilterTest do
+defmodule Approx.BloomFilterTest do
   use ExUnit.Case, async: true
 
   import Bitwise
 
-  alias Sketch.BloomFilter
+  alias Approx.BloomFilter
 
-  doctest Sketch.BloomFilter
+  doctest Approx.BloomFilter
 
   @max_32 bsl(1, 32)
 
@@ -61,7 +61,7 @@ defmodule Sketch.BloomFilterTest do
 
     test "uses default hash function when no option is given" do
       bf = new_filter(100)
-      # The default should be Sketch.Hash.hash32/1; just verify it works.
+      # The default should be Approx.Hash.hash32/1; just verify it works.
       assert is_function(bf.hash_fn, 1)
       assert is_integer(bf.hash_fn.("test"))
     end
@@ -725,7 +725,7 @@ defmodule Sketch.BloomFilterTest do
       end)
     end
 
-    test "hash_fn receives {:__sketch_h2__, element} for the second hash" do
+    test "hash_fn receives {:__approx_h2__, element} for the second hash" do
       parent = self()
 
       tracking_hash = fn term ->
@@ -745,8 +745,8 @@ defmodule Sketch.BloomFilterTest do
       assert {:hash_call, "test_elem"} in calls,
              "hash_fn should be called with the raw element"
 
-      assert {:hash_call, {:__sketch_h2__, "test_elem"}} in calls,
-             "hash_fn should be called with {:__sketch_h2__, element} for the second hash"
+      assert {:hash_call, {:__approx_h2__, "test_elem"}} in calls,
+             "hash_fn should be called with {:__approx_h2__, element} for the second hash"
     end
 
     test "large filter FPP is close to theoretical, not inflated by 16-bit hash collisions" do

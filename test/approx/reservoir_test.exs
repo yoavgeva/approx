@@ -1,9 +1,9 @@
-defmodule Sketch.ReservoirTest do
+defmodule Approx.ReservoirTest do
   use ExUnit.Case, async: true
 
-  alias Sketch.Reservoir
+  alias Approx.Reservoir
 
-  doctest Sketch.Reservoir
+  doctest Approx.Reservoir
 
   describe "new/2" do
     test "creates a reservoir with the given k" do

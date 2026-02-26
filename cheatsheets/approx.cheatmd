@@ -1,0 +1,232 @@
+# Approx Cheatsheet
+
+## Bloom Filter {: .col-2}
+
+### Create
+
+```elixir
+bf = Approx.BloomFilter.new(10_000)
+bf = Approx.BloomFilter.new(10_000, 0.001)
+```
+
+### Add & Query
+
+```elixir
+bf = Approx.BloomFilter.add(bf, "hello")
+Approx.BloomFilter.member?(bf, "hello")  # => true
+Approx.BloomFilter.member?(bf, "nope")   # => false
+```
+
+### Merge
+
+```elixir
+{:ok, merged} = Approx.BloomFilter.merge(bf1, bf2)
+```
+
+### Serialize
+
+```elixir
+bin = Approx.BloomFilter.to_binary(bf)
+{:ok, bf} = Approx.BloomFilter.from_binary(bin)
+```
+
+## Cuckoo Filter {: .col-2}
+
+### Create
+
+```elixir
+cf = Approx.CuckooFilter.new(10_000)
+```
+
+### Insert & Query
+
+```elixir
+{:ok, cf} = Approx.CuckooFilter.insert(cf, "hello")
+Approx.CuckooFilter.member?(cf, "hello")  # => true
+```
+
+### Delete
+
+```elixir
+{:ok, cf} = Approx.CuckooFilter.delete(cf, "hello")
+Approx.CuckooFilter.member?(cf, "hello")  # => false
+```
+
+### Serialize
+
+```elixir
+bin = Approx.CuckooFilter.to_binary(cf)
+{:ok, cf} = Approx.CuckooFilter.from_binary(bin)
+```
+
+## Count-Min Sketch {: .col-2}
+
+### Create
+
+```elixir
+cms = Approx.CountMinSketch.new()
+cms = Approx.CountMinSketch.new(0.001, 0.01)
+```
+
+### Add & Query
+
+```elixir
+cms = Approx.CountMinSketch.add(cms, "page_view")
+cms = Approx.CountMinSketch.add(cms, "page_view", 5)
+Approx.CountMinSketch.count(cms, "page_view")  # => 6
+```
+
+### Merge
+
+```elixir
+{:ok, merged} = Approx.CountMinSketch.merge(cms1, cms2)
+```
+
+### Serialize
+
+```elixir
+bin = Approx.CountMinSketch.to_binary(cms)
+{:ok, cms} = Approx.CountMinSketch.from_binary(bin)
+```
+
+## Top-K {: .col-2}
+
+### Create
+
+```elixir
+tk = Approx.TopK.new(10)
+tk = Approx.TopK.new(10, epsilon: 0.001, delta: 0.01)
+```
+
+### Add & Query
+
+```elixir
+tk = Approx.TopK.add(tk, "page_a", 5)
+tk = Approx.TopK.add(tk, "page_b", 12)
+Approx.TopK.top(tk)        # => [{"page_b", 12}, {"page_a", 5}]
+Approx.TopK.count(tk, "page_a")  # => 5
+Approx.TopK.member?(tk, "page_a")  # => true
+```
+
+### Merge
+
+```elixir
+{:ok, merged} = Approx.TopK.merge(tk1, tk2)
+```
+
+## HyperLogLog {: .col-2}
+
+### Create
+
+```elixir
+hll = Approx.HyperLogLog.new()
+hll = Approx.HyperLogLog.new(10)
+```
+
+### Add & Query
+
+```elixir
+hll = Approx.HyperLogLog.add(hll, "user_123")
+hll = Approx.HyperLogLog.add(hll, "user_456")
+Approx.HyperLogLog.count(hll)  # => 2
+```
+
+### Merge
+
+```elixir
+{:ok, merged} = Approx.HyperLogLog.merge(hll1, hll2)
+```
+
+### Serialize
+
+```elixir
+bin = Approx.HyperLogLog.to_binary(hll)
+{:ok, hll} = Approx.HyperLogLog.from_binary(bin)
+```
+
+## T-Digest {: .col-2}
+
+### Create
+
+```elixir
+td = Approx.TDigest.new()
+td = Approx.TDigest.new(200)
+```
+
+### Add & Query
+
+```elixir
+td = Approx.TDigest.add(td, 42.0)
+td = Approx.TDigest.add(td, 99.5, 3)
+Approx.TDigest.percentile(td, 0.50)  # median
+Approx.TDigest.percentile(td, 0.99)  # p99
+Approx.TDigest.median(td)
+Approx.TDigest.count(td)
+Approx.TDigest.min(td)
+Approx.TDigest.max(td)
+```
+
+### Merge
+
+```elixir
+merged = Approx.TDigest.merge(td1, td2)
+```
+
+### Serialize
+
+```elixir
+bin = Approx.TDigest.to_binary(td)
+{:ok, td} = Approx.TDigest.from_binary(bin)
+```
+
+## Reservoir {: .col-2}
+
+### Create
+
+```elixir
+r = Approx.Reservoir.new(100)
+r = Approx.Reservoir.new(100, seed: 42)
+```
+
+### Add & Query
+
+```elixir
+r = Approx.Reservoir.add(r, "event_1")
+r = Approx.Reservoir.add_all(r, 1..10_000)
+Approx.Reservoir.sample(r)  # => list of up to 100 elements
+Approx.Reservoir.count(r)   # => 10_001
+```
+
+### Merge
+
+```elixir
+{:ok, merged} = Approx.Reservoir.merge(r1, r2)
+```
+
+## MinHash {: .col-2}
+
+### Create
+
+```elixir
+mh = Approx.MinHash.new(128)
+mh = Approx.MinHash.new(128, seed: 42)
+```
+
+### Compute Signatures
+
+```elixir
+sig_a = Approx.MinHash.signature(mh, MapSet.new(["cat", "dog"]))
+sig_b = Approx.MinHash.signature(mh, MapSet.new(["cat", "bird"]))
+```
+
+### Estimate Similarity
+
+```elixir
+Approx.MinHash.similarity(sig_a, sig_b)  # => ~0.33
+```
+
+### Merge Signatures
+
+```elixir
+merged = Approx.MinHash.merge(sig_a, sig_b)
+```

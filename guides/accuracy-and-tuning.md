@@ -1,7 +1,7 @@
 # Accuracy and Tuning
 
 Probabilistic data structures trade exactness for dramatically less memory. Each
-structure in Sketch has parameters that control this tradeoff: you choose how much
+structure in Approx has parameters that control this tradeoff: you choose how much
 error you can tolerate, and the structure determines how much memory it needs.
 
 This guide explains what each parameter does, how the parameters interact, and how
@@ -44,9 +44,9 @@ requires a proportionally larger bit array but the same number of hash functions
 Start with FPP = 0.01 (1%). Only decrease if false positives are expensive in your
 application (for example, unnecessary database lookups or cache invalidations).
 
-## Count-Min Sketch
+## Count-Min Approx
 
-A Count-Min Sketch estimates the frequency of elements in a stream. It only
+A Count-Min Approx estimates the frequency of elements in a stream. It only
 overcounts, never undercounts.
 
 ### Parameters
@@ -101,14 +101,14 @@ order-of-magnitude estimates.
 
 ## Top-K
 
-Top-K tracks the most frequent elements in a stream. It combines a Count-Min Sketch
+Top-K tracks the most frequent elements in a stream. It combines a Count-Min Approx
 for frequency estimation with a bounded heap for tracking the top items.
 
 ### Parameters
 
 - **`k`** -- the number of top items to track.
-- **`epsilon`** and **`delta`** -- the underlying Count-Min Sketch parameters
-  (see the Count-Min Sketch section above).
+- **`epsilon`** and **`delta`** -- the underlying Count-Min Approx parameters
+  (see the Count-Min Approx section above).
 
 The CMS accuracy determines how well heavy hitters are identified versus noise. If
 the CMS overcounts a rare element enough, it may displace a true heavy hitter from
@@ -210,15 +210,15 @@ you typically need it most (for example, p99 latency).
 Use `delta = 100` (the default) for most applications. Increase to 200--300 for SLA
 monitoring where you need high confidence in tail latency percentiles.
 
-## Memory Comparison: Sketch vs. Exact
+## Memory Comparison: Approx vs. Exact
 
 The following table shows why probabilistic data structures exist. The memory
 savings are dramatic -- often 1000x or more -- for a small, controlled amount of
 error.
 
-| Task                          | Exact approach | Exact memory | Sketch approach            | Sketch memory |
+| Task                          | Exact approach | Exact memory | Approx approach            | Approx memory |
 | ----------------------------- | -------------- | ------------ | -------------------------- | ------------- |
 | Count 1M distinct users       | MapSet         | ~48 MB       | HyperLogLog (p=14)         | 16 KB         |
-| Track frequencies of 1M keys  | Map            | ~72 MB       | Count-Min Sketch           | 104 KB        |
+| Track frequencies of 1M keys  | Map            | ~72 MB       | Count-Min Approx           | 104 KB        |
 | Deduplicate 1M events         | MapSet         | ~48 MB       | Bloom Filter (1% FPP)      | 1.14 MB       |
 | p99 of 10M latency values     | Sorted list    | ~80 MB       | t-digest (delta=100)       | ~3.2 KB       |

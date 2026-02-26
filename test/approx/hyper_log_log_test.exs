@@ -1,9 +1,9 @@
-defmodule Sketch.HyperLogLogTest do
+defmodule Approx.HyperLogLogTest do
   use ExUnit.Case, async: true
 
-  alias Sketch.HyperLogLog
+  alias Approx.HyperLogLog
 
-  doctest Sketch.HyperLogLog
+  doctest Approx.HyperLogLog
 
   # ── new/2 ───────────────────────────────────────────────────────────────
 
@@ -856,21 +856,21 @@ defmodule Sketch.HyperLogLogTest do
   describe "bug verification" do
     test "BUG 22: to_binary performance should not degrade quadratically with precision" do
       # p=10 has 1024 registers, p=14 has 16384 registers (16x more)
-      hll_small = Sketch.HyperLogLog.new(10)
-      hll_small = Enum.reduce(1..100, hll_small, &Sketch.HyperLogLog.add(&2, &1))
+      hll_small = Approx.HyperLogLog.new(10)
+      hll_small = Enum.reduce(1..100, hll_small, &Approx.HyperLogLog.add(&2, &1))
 
-      hll_large = Sketch.HyperLogLog.new(14)
-      hll_large = Enum.reduce(1..100, hll_large, &Sketch.HyperLogLog.add(&2, &1))
+      hll_large = Approx.HyperLogLog.new(14)
+      hll_large = Enum.reduce(1..100, hll_large, &Approx.HyperLogLog.add(&2, &1))
 
       # Time serialization
       {time_small, _} =
         :timer.tc(fn ->
-          for _ <- 1..100, do: Sketch.HyperLogLog.to_binary(hll_small)
+          for _ <- 1..100, do: Approx.HyperLogLog.to_binary(hll_small)
         end)
 
       {time_large, _} =
         :timer.tc(fn ->
-          for _ <- 1..100, do: Sketch.HyperLogLog.to_binary(hll_large)
+          for _ <- 1..100, do: Approx.HyperLogLog.to_binary(hll_large)
         end)
 
       # If O(m), ratio should be ~16. If O(m^2), ratio should be ~256.
@@ -882,28 +882,28 @@ defmodule Sketch.HyperLogLogTest do
 
     test "BUG 23: merge performance should not degrade quadratically with precision" do
       hll1_small =
-        Enum.reduce(1..1000, Sketch.HyperLogLog.new(10), &Sketch.HyperLogLog.add(&2, &1))
+        Enum.reduce(1..1000, Approx.HyperLogLog.new(10), &Approx.HyperLogLog.add(&2, &1))
 
       hll2_small =
-        Enum.reduce(1001..2000, Sketch.HyperLogLog.new(10), &Sketch.HyperLogLog.add(&2, &1))
+        Enum.reduce(1001..2000, Approx.HyperLogLog.new(10), &Approx.HyperLogLog.add(&2, &1))
 
       hll1_large =
-        Enum.reduce(1..1000, Sketch.HyperLogLog.new(14), &Sketch.HyperLogLog.add(&2, &1))
+        Enum.reduce(1..1000, Approx.HyperLogLog.new(14), &Approx.HyperLogLog.add(&2, &1))
 
       hll2_large =
-        Enum.reduce(1001..2000, Sketch.HyperLogLog.new(14), &Sketch.HyperLogLog.add(&2, &1))
+        Enum.reduce(1001..2000, Approx.HyperLogLog.new(14), &Approx.HyperLogLog.add(&2, &1))
 
       {time_small, _} =
         :timer.tc(fn ->
           for _ <- 1..100 do
-            {:ok, _} = Sketch.HyperLogLog.merge(hll1_small, hll2_small)
+            {:ok, _} = Approx.HyperLogLog.merge(hll1_small, hll2_small)
           end
         end)
 
       {time_large, _} =
         :timer.tc(fn ->
           for _ <- 1..100 do
-            {:ok, _} = Sketch.HyperLogLog.merge(hll1_large, hll2_large)
+            {:ok, _} = Approx.HyperLogLog.merge(hll1_large, hll2_large)
           end
         end)
 
@@ -917,7 +917,7 @@ defmodule Sketch.HyperLogLogTest do
 
     test "BUG 24: phash2 provides reasonable distribution across full 32-bit range" do
       # Generate many hashes and check that values above 2^27 actually occur
-      hashes = for i <- 1..10_000, do: Sketch.Hash.hash32("element_#{i}")
+      hashes = for i <- 1..10_000, do: Approx.Hash.hash32("element_#{i}")
 
       max_hash = Enum.max(hashes)
 

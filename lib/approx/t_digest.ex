@@ -1,4 +1,4 @@
-defmodule Sketch.TDigest do
+defmodule Approx.TDigest do
   @moduledoc """
   A t-digest for streaming percentile estimation with high tail accuracy.
 
@@ -45,11 +45,11 @@ defmodule Sketch.TDigest do
 
   ## Examples
 
-      iex> td = Sketch.TDigest.new()
-      iex> td = Enum.reduce(1..1000, td, fn x, acc -> Sketch.TDigest.add(acc, x) end)
-      iex> Sketch.TDigest.count(td)
+      iex> td = Approx.TDigest.new()
+      iex> td = Enum.reduce(1..1000, td, fn x, acc -> Approx.TDigest.add(acc, x) end)
+      iex> Approx.TDigest.count(td)
       1000.0
-      iex> abs(Sketch.TDigest.median(td) - 500.5) < 10
+      iex> abs(Approx.TDigest.median(td) - 500.5) < 10
       true
 
   ## Algorithm Complexity
@@ -108,15 +108,15 @@ defmodule Sketch.TDigest do
 
   ## Examples
 
-      iex> td = Sketch.TDigest.new()
+      iex> td = Approx.TDigest.new()
       iex> td.delta
       100
 
-      iex> td = Sketch.TDigest.new(200)
+      iex> td = Approx.TDigest.new(200)
       iex> td.delta
       200
 
-      iex> td = Sketch.TDigest.new(50, buffer_limit: 100)
+      iex> td = Approx.TDigest.new(50, buffer_limit: 100)
       iex> td.buffer_limit
       100
 
@@ -126,7 +126,7 @@ defmodule Sketch.TDigest do
 
   ## Returns
 
-  A new, empty `%Sketch.TDigest{}` struct ready to accept data via `add/3`.
+  A new, empty `%Approx.TDigest{}` struct ready to accept data via `add/3`.
   """
   @spec new(number(), keyword()) :: t()
   def new(delta \\ 100, opts \\ []) when is_number(delta) and delta > 0 do
@@ -157,14 +157,14 @@ defmodule Sketch.TDigest do
 
   ## Examples
 
-      iex> td = Sketch.TDigest.new()
-      iex> td = Sketch.TDigest.add(td, 42.0)
-      iex> Sketch.TDigest.count(td)
+      iex> td = Approx.TDigest.new()
+      iex> td = Approx.TDigest.add(td, 42.0)
+      iex> Approx.TDigest.count(td)
       1.0
 
-      iex> td = Sketch.TDigest.new()
-      iex> td = Sketch.TDigest.add(td, 10.0, 5)
-      iex> Sketch.TDigest.count(td)
+      iex> td = Approx.TDigest.new()
+      iex> td = Approx.TDigest.add(td, 10.0, 5)
+      iex> Approx.TDigest.count(td)
       5.0
 
   ## Raises
@@ -173,7 +173,7 @@ defmodule Sketch.TDigest do
 
   ## Returns
 
-  An updated `%Sketch.TDigest{}` struct with the new value incorporated.
+  An updated `%Approx.TDigest{}` struct with the new value incorporated.
   If the internal buffer has reached its limit, the returned struct will
   have been automatically compressed.
   """
@@ -224,19 +224,19 @@ defmodule Sketch.TDigest do
 
   ## Examples
 
-      iex> td = Sketch.TDigest.new()
-      iex> td = Enum.reduce(1..100, td, fn x, acc -> Sketch.TDigest.add(acc, x) end)
-      iex> Sketch.TDigest.percentile(td, 0.0)
+      iex> td = Approx.TDigest.new()
+      iex> td = Enum.reduce(1..100, td, fn x, acc -> Approx.TDigest.add(acc, x) end)
+      iex> Approx.TDigest.percentile(td, 0.0)
       1.0
 
-      iex> td = Sketch.TDigest.new()
-      iex> td = Enum.reduce(1..100, td, fn x, acc -> Sketch.TDigest.add(acc, x) end)
-      iex> Sketch.TDigest.percentile(td, 1.0)
+      iex> td = Approx.TDigest.new()
+      iex> td = Enum.reduce(1..100, td, fn x, acc -> Approx.TDigest.add(acc, x) end)
+      iex> Approx.TDigest.percentile(td, 1.0)
       100.0
 
-      iex> td = Sketch.TDigest.new()
-      iex> td = Sketch.TDigest.add(td, 42.0)
-      iex> Sketch.TDigest.percentile(td, 0.5)
+      iex> td = Approx.TDigest.new()
+      iex> td = Approx.TDigest.add(td, 42.0)
+      iex> Approx.TDigest.percentile(td, 0.5)
       42.0
 
   ## Returns
@@ -272,12 +272,12 @@ defmodule Sketch.TDigest do
 
   ## Examples
 
-      iex> td = Sketch.TDigest.new()
-      iex> Sketch.TDigest.min(td)
+      iex> td = Approx.TDigest.new()
+      iex> Approx.TDigest.min(td)
       nil
 
-      iex> td = Sketch.TDigest.new() |> Sketch.TDigest.add(5.0) |> Sketch.TDigest.add(3.0) |> Sketch.TDigest.add(7.0)
-      iex> Sketch.TDigest.min(td)
+      iex> td = Approx.TDigest.new() |> Approx.TDigest.add(5.0) |> Approx.TDigest.add(3.0) |> Approx.TDigest.add(7.0)
+      iex> Approx.TDigest.min(td)
       3.0
 
   ## Returns
@@ -294,12 +294,12 @@ defmodule Sketch.TDigest do
 
   ## Examples
 
-      iex> td = Sketch.TDigest.new()
-      iex> Sketch.TDigest.max(td)
+      iex> td = Approx.TDigest.new()
+      iex> Approx.TDigest.max(td)
       nil
 
-      iex> td = Sketch.TDigest.new() |> Sketch.TDigest.add(5.0) |> Sketch.TDigest.add(3.0) |> Sketch.TDigest.add(7.0)
-      iex> Sketch.TDigest.max(td)
+      iex> td = Approx.TDigest.new() |> Approx.TDigest.add(5.0) |> Approx.TDigest.add(3.0) |> Approx.TDigest.add(7.0)
+      iex> Approx.TDigest.max(td)
       7.0
 
   ## Returns
@@ -317,13 +317,13 @@ defmodule Sketch.TDigest do
 
   ## Examples
 
-      iex> td = Sketch.TDigest.new()
-      iex> Sketch.TDigest.count(td)
+      iex> td = Approx.TDigest.new()
+      iex> Approx.TDigest.count(td)
       0.0
 
-      iex> td = Sketch.TDigest.new()
-      iex> td = Enum.reduce(1..50, td, fn x, acc -> Sketch.TDigest.add(acc, x) end)
-      iex> Sketch.TDigest.count(td)
+      iex> td = Approx.TDigest.new()
+      iex> td = Enum.reduce(1..50, td, fn x, acc -> Approx.TDigest.add(acc, x) end)
+      iex> Approx.TDigest.count(td)
       50.0
 
   ## Returns
@@ -341,9 +341,9 @@ defmodule Sketch.TDigest do
 
   ## Examples
 
-      iex> td = Sketch.TDigest.new()
-      iex> td = Sketch.TDigest.add(td, 10.0) |> Sketch.TDigest.add(20.0) |> Sketch.TDigest.add(30.0)
-      iex> Sketch.TDigest.median(td)
+      iex> td = Approx.TDigest.new()
+      iex> td = Approx.TDigest.add(td, 10.0) |> Approx.TDigest.add(20.0) |> Approx.TDigest.add(30.0)
+      iex> Approx.TDigest.median(td)
       20.0
 
   ## Returns
@@ -371,19 +371,19 @@ defmodule Sketch.TDigest do
 
   ## Examples
 
-      iex> td1 = Enum.reduce(1..50, Sketch.TDigest.new(), fn x, acc -> Sketch.TDigest.add(acc, x) end)
-      iex> td2 = Enum.reduce(51..100, Sketch.TDigest.new(), fn x, acc -> Sketch.TDigest.add(acc, x) end)
-      iex> merged = Sketch.TDigest.merge(td1, td2)
-      iex> Sketch.TDigest.count(merged)
+      iex> td1 = Enum.reduce(1..50, Approx.TDigest.new(), fn x, acc -> Approx.TDigest.add(acc, x) end)
+      iex> td2 = Enum.reduce(51..100, Approx.TDigest.new(), fn x, acc -> Approx.TDigest.add(acc, x) end)
+      iex> merged = Approx.TDigest.merge(td1, td2)
+      iex> Approx.TDigest.count(merged)
       100.0
-      iex> Sketch.TDigest.min(merged)
+      iex> Approx.TDigest.min(merged)
       1.0
-      iex> Sketch.TDigest.max(merged)
+      iex> Approx.TDigest.max(merged)
       100.0
 
   ## Returns
 
-  A new `%Sketch.TDigest{}` struct containing all data from both input
+  A new `%Approx.TDigest{}` struct containing all data from both input
   digests, compressed using the `delta` from the first digest.
   """
   @spec merge(t(), t()) :: t()
@@ -433,9 +433,9 @@ defmodule Sketch.TDigest do
 
   ## Examples
 
-      iex> td = Sketch.TDigest.new() |> Sketch.TDigest.add(1.0) |> Sketch.TDigest.add(2.0)
-      iex> {:ok, restored} = td |> Sketch.TDigest.to_binary() |> Sketch.TDigest.from_binary()
-      iex> Sketch.TDigest.count(restored)
+      iex> td = Approx.TDigest.new() |> Approx.TDigest.add(1.0) |> Approx.TDigest.add(2.0)
+      iex> {:ok, restored} = td |> Approx.TDigest.to_binary() |> Approx.TDigest.from_binary()
+      iex> Approx.TDigest.count(restored)
       2.0
   """
   @spec to_binary(t()) :: binary()
@@ -471,9 +471,9 @@ defmodule Sketch.TDigest do
 
   ## Examples
 
-      iex> td = Sketch.TDigest.new() |> Sketch.TDigest.add(1.0) |> Sketch.TDigest.add(2.0)
-      iex> {:ok, restored} = td |> Sketch.TDigest.to_binary() |> Sketch.TDigest.from_binary()
-      iex> Sketch.TDigest.count(restored)
+      iex> td = Approx.TDigest.new() |> Approx.TDigest.add(1.0) |> Approx.TDigest.add(2.0)
+      iex> {:ok, restored} = td |> Approx.TDigest.to_binary() |> Approx.TDigest.from_binary()
+      iex> Approx.TDigest.count(restored)
       2.0
   """
   @spec from_binary(binary()) :: {:ok, t()} | {:error, :invalid_binary}
@@ -529,7 +529,7 @@ defmodule Sketch.TDigest do
 
   ## Returns
 
-  An updated `%Sketch.TDigest{}` struct with an empty buffer and a
+  An updated `%Approx.TDigest{}` struct with an empty buffer and a
   compressed centroid list.
   """
   @spec compress(t()) :: t()

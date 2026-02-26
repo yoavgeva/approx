@@ -1,6 +1,6 @@
-# Getting Started with Sketch
+# Getting Started with Approx
 
-This guide walks you through installing Sketch, building your first
+This guide walks you through installing Approx, building your first
 probabilistic data structure, and applying common patterns you will encounter in
 production Elixir applications.
 
@@ -13,12 +13,12 @@ By the end you will have working examples of:
 
 ## Installation
 
-Add `sketch` to your list of dependencies in `mix.exs`:
+Add `approx` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:sketch, "~> 0.1.0"}
+    {:approx, "~> 0.1.0"}
   ]
 end
 ```
@@ -29,7 +29,7 @@ Then fetch the dependency:
 mix deps.get
 ```
 
-Sketch is a pure-Elixir library with zero runtime dependencies. There is nothing
+Approx is a pure-Elixir library with zero runtime dependencies. There is nothing
 else to configure -- no NIFs to compile, no external services to start.
 
 ## Your First Sketch -- Bloom Filter
@@ -47,7 +47,7 @@ false-positive probability (FPP):
 
 ```elixir
 # A filter for up to 10,000 items with a 1% false-positive rate
-bf = Sketch.BloomFilter.new(10_000, 0.01)
+bf = Approx.BloomFilter.new(10_000, 0.01)
 ```
 
 The library computes the optimal bit-array size and number of hash functions
@@ -60,9 +60,9 @@ automatically from these two parameters.
 ```elixir
 bf =
   bf
-  |> Sketch.BloomFilter.add("alice@example.com")
-  |> Sketch.BloomFilter.add("bob@example.com")
-  |> Sketch.BloomFilter.add("charlie@example.com")
+  |> Approx.BloomFilter.add("alice@example.com")
+  |> Approx.BloomFilter.add("bob@example.com")
+  |> Approx.BloomFilter.add("charlie@example.com")
 ```
 
 You can add any Erlang/Elixir term -- strings, atoms, integers, tuples, etc.
@@ -70,13 +70,13 @@ You can add any Erlang/Elixir term -- strings, atoms, integers, tuples, etc.
 ### 3. Query membership
 
 ```elixir
-Sketch.BloomFilter.member?(bf, "alice@example.com")
+Approx.BloomFilter.member?(bf, "alice@example.com")
 # => true
 
-Sketch.BloomFilter.member?(bf, "alice@example.com")
+Approx.BloomFilter.member?(bf, "alice@example.com")
 # => true  (always -- no false negatives)
 
-Sketch.BloomFilter.member?(bf, "unknown@example.com")
+Approx.BloomFilter.member?(bf, "unknown@example.com")
 # => false (definitely not in the set)
 ```
 
@@ -87,10 +87,10 @@ added will always be reported as present:
 
 ```elixir
 emails = for i <- 1..1_000, do: "user_#{i}@example.com"
-bf = Enum.reduce(emails, Sketch.BloomFilter.new(10_000, 0.01), &Sketch.BloomFilter.add(&2, &1))
+bf = Enum.reduce(emails, Approx.BloomFilter.new(10_000, 0.01), &Approx.BloomFilter.add(&2, &1))
 
 # Every single inserted element is found -- guaranteed
-Enum.all?(emails, &Sketch.BloomFilter.member?(bf, &1))
+Enum.all?(emails, &Approx.BloomFilter.member?(bf, &1))
 # => true
 ```
 
@@ -104,7 +104,7 @@ chose at creation time:
 # Query 100,000 items that were never added
 false_positives =
   1..100_000
-  |> Enum.count(fn i -> Sketch.BloomFilter.member?(bf, "never_added_#{i}") end)
+  |> Enum.count(fn i -> Approx.BloomFilter.member?(bf, "never_added_#{i}") end)
 
 # With a 1% FPP and 1,000 items inserted into a 10,000-capacity filter,
 # you can expect roughly 1% of these probes to be false positives.
@@ -156,23 +156,23 @@ defmodule MyApp.Deduplicator do
 
   @impl true
   def init({capacity, fpp}) do
-    {:ok, Sketch.BloomFilter.new(capacity, fpp)}
+    {:ok, Approx.BloomFilter.new(capacity, fpp)}
   end
 
   @impl true
   def handle_call({:seen?, item}, _from, bf) do
-    {:reply, Sketch.BloomFilter.member?(bf, item), bf}
+    {:reply, Approx.BloomFilter.member?(bf, item), bf}
   end
 
   def handle_call({:mark, item}, _from, bf) do
-    {:reply, :ok, Sketch.BloomFilter.add(bf, item)}
+    {:reply, :ok, Approx.BloomFilter.add(bf, item)}
   end
 
   def handle_call({:check_and_mark, item}, _from, bf) do
-    if Sketch.BloomFilter.member?(bf, item) do
+    if Approx.BloomFilter.member?(bf, item) do
       {:reply, :duplicate, bf}
     else
-      {:reply, :new, Sketch.BloomFilter.add(bf, item)}
+      {:reply, :new, Approx.BloomFilter.add(bf, item)}
     end
   end
 end
@@ -207,7 +207,7 @@ end
 
 ## Distributed Merging
 
-Every Sketch data structure supports serialization via `to_binary/1` and
+Every Approx data structure supports serialization via `to_binary/1` and
 `from_binary/1`, and merging via `merge/2`. This makes it straightforward to
 build sketches on individual nodes and combine them on an aggregator.
 
@@ -220,9 +220,9 @@ Each node builds its own HyperLogLog from local data and serializes it:
 
 ```elixir
 # Node A
-hll_a = Sketch.HyperLogLog.new(14)
-hll_a = Enum.reduce(local_user_ids, hll_a, &Sketch.HyperLogLog.add(&2, &1))
-binary_a = Sketch.HyperLogLog.to_binary(hll_a)
+hll_a = Approx.HyperLogLog.new(14)
+hll_a = Enum.reduce(local_user_ids, hll_a, &Approx.HyperLogLog.add(&2, &1))
+binary_a = Approx.HyperLogLog.to_binary(hll_a)
 
 # Send binary_a to the aggregator node.
 # This is just a binary -- you can send it via :rpc.call, Phoenix PubSub,
@@ -236,14 +236,14 @@ and merges:
 
 ```elixir
 # Receive binaries from nodes A and B (however you transport them)
-{:ok, hll_a} = Sketch.HyperLogLog.from_binary(binary_a)
-{:ok, hll_b} = Sketch.HyperLogLog.from_binary(binary_b)
+{:ok, hll_a} = Approx.HyperLogLog.from_binary(binary_a)
+{:ok, hll_b} = Approx.HyperLogLog.from_binary(binary_b)
 
 # Merge into a single estimator
-{:ok, merged} = Sketch.HyperLogLog.merge(hll_a, hll_b)
+{:ok, merged} = Approx.HyperLogLog.merge(hll_a, hll_b)
 
 # Query the combined cardinality
-Sketch.HyperLogLog.count(merged)
+Approx.HyperLogLog.count(merged)
 # => estimated number of distinct users across both nodes
 ```
 
@@ -257,15 +257,15 @@ binaries = [binary_a, binary_b, binary_c, binary_d]
 merged =
   binaries
   |> Enum.map(fn bin ->
-    {:ok, hll} = Sketch.HyperLogLog.from_binary(bin)
+    {:ok, hll} = Approx.HyperLogLog.from_binary(bin)
     hll
   end)
   |> Enum.reduce(fn hll, acc ->
-    {:ok, merged} = Sketch.HyperLogLog.merge(acc, hll)
+    {:ok, merged} = Approx.HyperLogLog.merge(acc, hll)
     merged
   end)
 
-Sketch.HyperLogLog.count(merged)
+Approx.HyperLogLog.count(merged)
 # => estimated distinct count across all four nodes
 ```
 
@@ -282,7 +282,7 @@ happen. It uses far less memory than storing every observation.
 ### 1. Create a digest
 
 ```elixir
-td = Sketch.TDigest.new()
+td = Approx.TDigest.new()
 ```
 
 The default compression parameter (`delta = 100`) works well for most use
@@ -299,23 +299,23 @@ latencies = [
   13.5, 14.1, 18.3, 11.0, 310.7, 12.8, 15.5, 13.2, 12.1, 11.9
 ]
 
-td = Enum.reduce(latencies, td, &Sketch.TDigest.add(&2, &1))
+td = Enum.reduce(latencies, td, &Approx.TDigest.add(&2, &1))
 ```
 
-In production you would call `Sketch.TDigest.add/2` on each request:
+In production you would call `Approx.TDigest.add/2` on each request:
 
 ```elixir
 {elapsed_ms, result} = :timer.tc(fn -> handle_request(conn) end, :millisecond)
-updated_td = Sketch.TDigest.add(td, elapsed_ms)
+updated_td = Approx.TDigest.add(td, elapsed_ms)
 ```
 
 ### 3. Query percentiles
 
 ```elixir
-Sketch.TDigest.percentile(td, 0.50)   # p50 -- median response time
-Sketch.TDigest.percentile(td, 0.95)   # p95
-Sketch.TDigest.percentile(td, 0.99)   # p99
-Sketch.TDigest.percentile(td, 0.999)  # p99.9
+Approx.TDigest.percentile(td, 0.50)   # p50 -- median response time
+Approx.TDigest.percentile(td, 0.95)   # p95
+Approx.TDigest.percentile(td, 0.99)   # p99
+Approx.TDigest.percentile(td, 0.999)  # p99.9
 ```
 
 The t-digest is especially accurate at the extreme tails. A p99.9 estimate from
@@ -328,18 +328,18 @@ them later without losing accuracy:
 
 ```elixir
 # Each hour, build a digest from that hour's latencies
-hour_00 = Enum.reduce(hour_00_latencies, Sketch.TDigest.new(), &Sketch.TDigest.add(&2, &1))
-hour_01 = Enum.reduce(hour_01_latencies, Sketch.TDigest.new(), &Sketch.TDigest.add(&2, &1))
-hour_02 = Enum.reduce(hour_02_latencies, Sketch.TDigest.new(), &Sketch.TDigest.add(&2, &1))
+hour_00 = Enum.reduce(hour_00_latencies, Approx.TDigest.new(), &Approx.TDigest.add(&2, &1))
+hour_01 = Enum.reduce(hour_01_latencies, Approx.TDigest.new(), &Approx.TDigest.add(&2, &1))
+hour_02 = Enum.reduce(hour_02_latencies, Approx.TDigest.new(), &Approx.TDigest.add(&2, &1))
 
 # Merge into a daily digest
-daily = hour_00 |> Sketch.TDigest.merge(hour_01) |> Sketch.TDigest.merge(hour_02)
+daily = hour_00 |> Approx.TDigest.merge(hour_01) |> Approx.TDigest.merge(hour_02)
 
 # Query the full day's percentiles
-Sketch.TDigest.percentile(daily, 0.99)
+Approx.TDigest.percentile(daily, 0.99)
 # => p99 latency across all three hours
 
-Sketch.TDigest.count(daily)
+Approx.TDigest.count(daily)
 # => total number of requests across all three hours
 ```
 
@@ -353,19 +353,19 @@ data.
 Now that you have the basics, here are some resources to go deeper:
 
 - **[Choosing a Data Structure](choosing-a-data-structure.md)** -- a decision
-  guide that helps you pick the right sketch for your problem (Bloom filter vs.
+  guide that helps you pick the right structure for your problem (Bloom filter vs.
   Cuckoo filter, Count-Min Sketch vs. Top-K, etc.)
 
 - **Module documentation** -- every module has detailed docs with examples on
   every function:
-  - `Sketch.BloomFilter` -- set membership (no false negatives)
-  - `Sketch.CuckooFilter` -- set membership with deletion support
-  - `Sketch.CountMinSketch` -- frequency estimation
-  - `Sketch.TopK` -- heavy hitters / most frequent items
-  - `Sketch.HyperLogLog` -- cardinality (distinct count) estimation
-  - `Sketch.TDigest` -- streaming percentiles
-  - `Sketch.Reservoir` -- uniform random sampling
-  - `Sketch.MinHash` -- Jaccard similarity estimation
+  - `Approx.BloomFilter` -- set membership (no false negatives)
+  - `Approx.CuckooFilter` -- set membership with deletion support
+  - `Approx.CountMinSketch` -- frequency estimation
+  - `Approx.TopK` -- heavy hitters / most frequent items
+  - `Approx.HyperLogLog` -- cardinality (distinct count) estimation
+  - `Approx.TDigest` -- streaming percentiles
+  - `Approx.Reservoir` -- uniform random sampling
+  - `Approx.MinHash` -- Jaccard similarity estimation
 
-- **[Cheatsheet](sketch.cheatmd)** -- a single-page quick reference with the
+- **[Cheatsheet](approx.cheatmd)** -- a single-page quick reference with the
   most common operations for every data structure

@@ -1,19 +1,19 @@
-defmodule Sketch.MixProject do
+defmodule Approx.MixProject do
   use Mix.Project
 
   @version "0.1.0"
-  @source_url "https://github.com/yoavgeva/sketch"
+  @source_url "https://github.com/yoavgeva/approx"
 
   def project do
     [
-      app: :sketch,
+      app: :approx,
       version: @version,
       elixir: "~> 1.15",
       start_permanent: Mix.env() == :prod,
       deps: deps(),
       package: package(),
       docs: docs(),
-      name: "Sketch",
+      name: "Approx",
       description:
         "Probabilistic data structures for Elixir — Bloom filter, Count-Min Sketch, HyperLogLog, t-digest, and more."
     ]
@@ -50,7 +50,7 @@ defmodule Sketch.MixProject do
         "guides/choosing-a-data-structure.md",
         "guides/distributed-merging.md",
         "guides/accuracy-and-tuning.md",
-        "cheatsheets/sketch.cheatmd",
+        "cheatsheets/approx.cheatmd",
         "LICENSE"
       ],
       groups_for_extras: [
@@ -61,15 +61,15 @@ defmodule Sketch.MixProject do
           "guides/accuracy-and-tuning.md"
         ],
         Cheatsheets: [
-          "cheatsheets/sketch.cheatmd"
+          "cheatsheets/approx.cheatmd"
         ]
       ],
       groups_for_modules: [
-        "Set Membership": [Sketch.BloomFilter, Sketch.CuckooFilter],
-        "Frequency & Ranking": [Sketch.CountMinSketch, Sketch.TopK],
-        Cardinality: [Sketch.HyperLogLog],
-        "Sampling & Similarity": [Sketch.Reservoir, Sketch.MinHash],
-        Distribution: [Sketch.TDigest]
+        "Set Membership": [Approx.BloomFilter, Approx.CuckooFilter],
+        "Frequency & Ranking": [Approx.CountMinSketch, Approx.TopK],
+        Cardinality: [Approx.HyperLogLog],
+        "Sampling & Similarity": [Approx.Reservoir, Approx.MinHash],
+        Distribution: [Approx.TDigest]
       ]
     ]
   end

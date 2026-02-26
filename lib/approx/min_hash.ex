@@ -1,4 +1,4 @@
-defmodule Sketch.MinHash do
+defmodule Approx.MinHash do
   @moduledoc """
   MinHash — a locality-sensitive hashing scheme for estimating Jaccard similarity.
 
@@ -24,14 +24,14 @@ defmodule Sketch.MinHash do
 
   ## Creating a MinHash instance
 
-      mh = Sketch.MinHash.new(128)
-      mh = Sketch.MinHash.new(256, seed: 42)
+      mh = Approx.MinHash.new(128)
+      mh = Approx.MinHash.new(256, seed: 42)
 
   ## Computing signatures and similarity
 
-      sig_a = Sketch.MinHash.signature(mh, MapSet.new(["cat", "dog", "fish"]))
-      sig_b = Sketch.MinHash.signature(mh, MapSet.new(["cat", "dog", "bird"]))
-      Sketch.MinHash.similarity(sig_a, sig_b)
+      sig_a = Approx.MinHash.signature(mh, MapSet.new(["cat", "dog", "fish"]))
+      sig_b = Approx.MinHash.signature(mh, MapSet.new(["cat", "dog", "bird"]))
+      Approx.MinHash.similarity(sig_a, sig_b)
       # => ~0.5 (true Jaccard is 2/4 = 0.5)
 
   ## Merging signatures
@@ -40,7 +40,7 @@ defmodule Sketch.MinHash do
   merged signature is equivalent to the signature of the union of the original
   sets:
 
-      merged = Sketch.MinHash.merge(sig_a, sig_b)
+      merged = Approx.MinHash.merge(sig_a, sig_b)
 
   ## Implementation notes
 
@@ -102,17 +102,17 @@ defmodule Sketch.MinHash do
 
   ## Returns
 
-  A `%Sketch.MinHash{}` struct containing the generated hash function
+  A `%Approx.MinHash{}` struct containing the generated hash function
   coefficients. The struct itself does not hold any set data; pass it to
   `signature/2` to compute signatures for specific sets.
 
   ## Examples
 
-      iex> mh = Sketch.MinHash.new(64)
+      iex> mh = Approx.MinHash.new(64)
       iex> mh.num_hashes
       64
 
-      iex> mh = Sketch.MinHash.new(128, seed: 42)
+      iex> mh = Approx.MinHash.new(128, seed: 42)
       iex> mh.num_hashes
       128
   """
@@ -120,7 +120,7 @@ defmodule Sketch.MinHash do
   def new(num_hashes \\ 128, opts \\ [])
 
   def new(num_hashes, opts) when is_integer(num_hashes) and num_hashes > 0 do
-    hash_fn = Keyword.get(opts, :hash_fn, &Sketch.Hash.hash32/1)
+    hash_fn = Keyword.get(opts, :hash_fn, &Approx.Hash.hash32/1)
 
     seed =
       case Keyword.get(opts, :seed) do
@@ -155,7 +155,7 @@ defmodule Sketch.MinHash do
 
   ## Parameters
 
-    * `mh` — a `%Sketch.MinHash{}` struct.
+    * `mh` — a `%Approx.MinHash{}` struct.
     * `set` — any `Enumerable` of terms (e.g., `MapSet`, list, `Stream`).
 
   ## Returns
@@ -164,13 +164,13 @@ defmodule Sketch.MinHash do
 
   ## Examples
 
-      iex> mh = Sketch.MinHash.new(4, seed: 1)
-      iex> sig = Sketch.MinHash.signature(mh, MapSet.new(["a", "b", "c"]))
+      iex> mh = Approx.MinHash.new(4, seed: 1)
+      iex> sig = Approx.MinHash.signature(mh, MapSet.new(["a", "b", "c"]))
       iex> tuple_size(sig)
       4
 
-      iex> mh = Sketch.MinHash.new(4, seed: 1)
-      iex> sig = Sketch.MinHash.signature(mh, [])
+      iex> mh = Approx.MinHash.new(4, seed: 1)
+      iex> sig = Approx.MinHash.signature(mh, [])
       iex> sig == Tuple.duplicate(4_294_967_295, 4)
       true
   """
@@ -200,7 +200,7 @@ defmodule Sketch.MinHash do
   Both signatures must have the same length (i.e., produced by MinHash
   instances with the same `num_hashes`).
 
-  > **Note**: Unlike other Sketch modules where `similarity/2` operates on struct
+  > **Note**: Unlike other Approx modules where `similarity/2` operates on struct
   > pairs, MinHash's `similarity/2` operates on **signature tuples** produced by
   > `signature/2`. This is because the MinHash struct holds only the hash
   > function coefficients, not any set data.
@@ -217,15 +217,15 @@ defmodule Sketch.MinHash do
 
   ## Examples
 
-      iex> mh = Sketch.MinHash.new(128, seed: 42)
-      iex> sig = Sketch.MinHash.signature(mh, MapSet.new([1, 2, 3]))
-      iex> Sketch.MinHash.similarity(sig, sig)
+      iex> mh = Approx.MinHash.new(128, seed: 42)
+      iex> sig = Approx.MinHash.signature(mh, MapSet.new([1, 2, 3]))
+      iex> Approx.MinHash.similarity(sig, sig)
       1.0
 
-      iex> mh = Sketch.MinHash.new(128, seed: 42)
-      iex> sig1 = Sketch.MinHash.signature(mh, MapSet.new(1..100))
-      iex> sig2 = Sketch.MinHash.signature(mh, MapSet.new(200..300))
-      iex> Sketch.MinHash.similarity(sig1, sig2) < 0.1
+      iex> mh = Approx.MinHash.new(128, seed: 42)
+      iex> sig1 = Approx.MinHash.signature(mh, MapSet.new(1..100))
+      iex> sig2 = Approx.MinHash.signature(mh, MapSet.new(200..300))
+      iex> Approx.MinHash.similarity(sig1, sig2) < 0.1
       true
   """
   @spec similarity(signature(), signature()) :: float()
@@ -251,7 +251,7 @@ defmodule Sketch.MinHash do
   The merged signature estimates the similarity of the union of the original
   sets against any other set. Both signatures must have the same length.
 
-  > **Note**: Unlike other Sketch modules where `merge/2` operates on struct
+  > **Note**: Unlike other Approx modules where `merge/2` operates on struct
   > pairs, MinHash's `merge/2` operates on **signature tuples** produced by
   > `signature/2`. This is because the MinHash struct holds only the hash
   > function coefficients, not any set data.
@@ -268,17 +268,17 @@ defmodule Sketch.MinHash do
 
   ## Examples
 
-      iex> mh = Sketch.MinHash.new(4, seed: 99)
-      iex> sig1 = Sketch.MinHash.signature(mh, MapSet.new(["a", "b"]))
-      iex> sig2 = Sketch.MinHash.signature(mh, MapSet.new(["c", "d"]))
-      iex> merged = Sketch.MinHash.merge(sig1, sig2)
+      iex> mh = Approx.MinHash.new(4, seed: 99)
+      iex> sig1 = Approx.MinHash.signature(mh, MapSet.new(["a", "b"]))
+      iex> sig2 = Approx.MinHash.signature(mh, MapSet.new(["c", "d"]))
+      iex> merged = Approx.MinHash.merge(sig1, sig2)
       iex> tuple_size(merged)
       4
 
-      iex> mh = Sketch.MinHash.new(4, seed: 99)
-      iex> sig1 = Sketch.MinHash.signature(mh, MapSet.new(["a"]))
-      iex> sig2 = Sketch.MinHash.signature(mh, MapSet.new(["a"]))
-      iex> Sketch.MinHash.merge(sig1, sig2) == sig1
+      iex> mh = Approx.MinHash.new(4, seed: 99)
+      iex> sig1 = Approx.MinHash.signature(mh, MapSet.new(["a"]))
+      iex> sig2 = Approx.MinHash.signature(mh, MapSet.new(["a"]))
+      iex> Approx.MinHash.merge(sig1, sig2) == sig1
       true
   """
   @spec merge(signature(), signature()) :: signature()

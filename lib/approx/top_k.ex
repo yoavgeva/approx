@@ -1,9 +1,9 @@
-defmodule Sketch.TopK do
+defmodule Approx.TopK do
   @moduledoc """
   A Top-K frequent items tracker backed by a Count-Min Sketch.
 
   This module maintains an approximate list of the `k` most frequent items
-  seen in a data stream. It combines a `Sketch.CountMinSketch` for frequency
+  seen in a data stream. It combines a `Approx.CountMinSketch` for frequency
   estimation with a bounded map of the current top-k candidates.
 
   ## How It Works
@@ -34,21 +34,21 @@ defmodule Sketch.TopK do
 
   ## Examples
 
-      iex> tk = Sketch.TopK.new(3)
-      iex> tk = tk |> Sketch.TopK.add("a", 10) |> Sketch.TopK.add("b", 5) |> Sketch.TopK.add("c", 8)
-      iex> top = Sketch.TopK.top(tk)
+      iex> tk = Approx.TopK.new(3)
+      iex> tk = tk |> Approx.TopK.add("a", 10) |> Approx.TopK.add("b", 5) |> Approx.TopK.add("c", 8)
+      iex> top = Approx.TopK.top(tk)
       iex> length(top) == 3
       true
 
-      iex> tk = Sketch.TopK.new(2)
-      iex> tk = tk |> Sketch.TopK.add("x", 100) |> Sketch.TopK.add("y", 50) |> Sketch.TopK.add("z", 1)
-      iex> Sketch.TopK.member?(tk, "x")
+      iex> tk = Approx.TopK.new(2)
+      iex> tk = tk |> Approx.TopK.add("x", 100) |> Approx.TopK.add("y", 50) |> Approx.TopK.add("z", 1)
+      iex> Approx.TopK.member?(tk, "x")
       true
-      iex> Sketch.TopK.member?(tk, "z")
+      iex> Approx.TopK.member?(tk, "z")
       false
   """
 
-  alias Sketch.CountMinSketch
+  alias Approx.CountMinSketch
 
   @enforce_keys [:k, :cms, :items, :hash_fn]
   defstruct [:k, :cms, :items, :hash_fn, :min_elem, :min_count]
@@ -59,7 +59,7 @@ defmodule Sketch.TopK do
   Fields:
 
     * `:k` — The maximum number of top items to track.
-    * `:cms` — The underlying `Sketch.CountMinSketch` used for frequency
+    * `:cms` — The underlying `Approx.CountMinSketch` used for frequency
       estimation.
     * `:items` — A map of the current top-k candidates, where keys are
       elements and values are their estimated counts.
@@ -102,15 +102,15 @@ defmodule Sketch.TopK do
 
   ## Returns
 
-  A new `%Sketch.TopK{}` struct with an empty candidate map.
+  A new `%Approx.TopK{}` struct with an empty candidate map.
 
   ## Examples
 
-      iex> tk = Sketch.TopK.new(10)
+      iex> tk = Approx.TopK.new(10)
       iex> tk.k
       10
 
-      iex> tk = Sketch.TopK.new(5, epsilon: 0.01, delta: 0.05)
+      iex> tk = Approx.TopK.new(5, epsilon: 0.01, delta: 0.05)
       iex> tk.k
       5
   """
@@ -151,19 +151,19 @@ defmodule Sketch.TopK do
 
   ## Returns
 
-  An updated `%Sketch.TopK{}` struct with the element recorded in the CMS
+  An updated `%Approx.TopK{}` struct with the element recorded in the CMS
   and the candidate map potentially updated.
 
   ## Examples
 
-      iex> tk = Sketch.TopK.new(3)
-      iex> tk = Sketch.TopK.add(tk, "apple", 10)
-      iex> Sketch.TopK.count(tk, "apple") >= 10
+      iex> tk = Approx.TopK.new(3)
+      iex> tk = Approx.TopK.add(tk, "apple", 10)
+      iex> Approx.TopK.count(tk, "apple") >= 10
       true
 
-      iex> tk = Sketch.TopK.new(2)
-      iex> tk = tk |> Sketch.TopK.add("a", 5) |> Sketch.TopK.add("a", 3)
-      iex> Sketch.TopK.count(tk, "a") >= 8
+      iex> tk = Approx.TopK.new(2)
+      iex> tk = tk |> Approx.TopK.add("a", 5) |> Approx.TopK.add("a", 3)
+      iex> Approx.TopK.count(tk, "a") >= 8
       true
   """
   @spec add(t(), term(), pos_integer()) :: t()
@@ -204,16 +204,16 @@ defmodule Sketch.TopK do
 
   ## Examples
 
-      iex> tk = Sketch.TopK.new(2)
-      iex> tk = tk |> Sketch.TopK.add("a", 10) |> Sketch.TopK.add("b", 20)
-      iex> [{first_elem, _}, {second_elem, _}] = Sketch.TopK.top(tk)
+      iex> tk = Approx.TopK.new(2)
+      iex> tk = tk |> Approx.TopK.add("a", 10) |> Approx.TopK.add("b", 20)
+      iex> [{first_elem, _}, {second_elem, _}] = Approx.TopK.top(tk)
       iex> first_elem
       "b"
       iex> second_elem
       "a"
 
-      iex> tk = Sketch.TopK.new(5)
-      iex> Sketch.TopK.top(tk)
+      iex> tk = Approx.TopK.new(5)
+      iex> Approx.TopK.top(tk)
       []
   """
   @spec top(t()) :: list({term(), non_neg_integer()})
@@ -241,12 +241,12 @@ defmodule Sketch.TopK do
 
   ## Examples
 
-      iex> tk = Sketch.TopK.new(3) |> Sketch.TopK.add("x", 42)
-      iex> Sketch.TopK.count(tk, "x") >= 42
+      iex> tk = Approx.TopK.new(3) |> Approx.TopK.add("x", 42)
+      iex> Approx.TopK.count(tk, "x") >= 42
       true
 
-      iex> tk = Sketch.TopK.new(3)
-      iex> Sketch.TopK.count(tk, "never_added")
+      iex> tk = Approx.TopK.new(3)
+      iex> Approx.TopK.count(tk, "never_added")
       0
   """
   @spec count(t(), term()) :: non_neg_integer()
@@ -273,11 +273,11 @@ defmodule Sketch.TopK do
 
   ## Examples
 
-      iex> tk = Sketch.TopK.new(2)
-      iex> tk = tk |> Sketch.TopK.add("a", 100) |> Sketch.TopK.add("b", 50) |> Sketch.TopK.add("c", 1)
-      iex> Sketch.TopK.member?(tk, "a")
+      iex> tk = Approx.TopK.new(2)
+      iex> tk = tk |> Approx.TopK.add("a", 100) |> Approx.TopK.add("b", 50) |> Approx.TopK.add("c", 1)
+      iex> Approx.TopK.member?(tk, "a")
       true
-      iex> Sketch.TopK.member?(tk, "c")
+      iex> Approx.TopK.member?(tk, "c")
       false
   """
   @spec member?(t(), term()) :: boolean()
@@ -313,10 +313,10 @@ defmodule Sketch.TopK do
 
   ## Examples
 
-      iex> tk1 = Sketch.TopK.new(2) |> Sketch.TopK.add("a", 10) |> Sketch.TopK.add("b", 5)
-      iex> tk2 = Sketch.TopK.new(2) |> Sketch.TopK.add("a", 20) |> Sketch.TopK.add("c", 15)
-      iex> {:ok, merged} = Sketch.TopK.merge(tk1, tk2)
-      iex> Sketch.TopK.member?(merged, "a")
+      iex> tk1 = Approx.TopK.new(2) |> Approx.TopK.add("a", 10) |> Approx.TopK.add("b", 5)
+      iex> tk2 = Approx.TopK.new(2) |> Approx.TopK.add("a", 20) |> Approx.TopK.add("c", 15)
+      iex> {:ok, merged} = Approx.TopK.merge(tk1, tk2)
+      iex> Approx.TopK.member?(merged, "a")
       true
   """
   @spec merge(t(), t()) :: {:ok, t()} | {:error, :incompatible_k | :dimension_mismatch}

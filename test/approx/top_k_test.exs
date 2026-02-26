@@ -1,7 +1,7 @@
-defmodule Sketch.TopKTest do
+defmodule Approx.TopKTest do
   use ExUnit.Case, async: true
 
-  alias Sketch.TopK
+  alias Approx.TopK
 
   doctest TopK
 
@@ -22,7 +22,7 @@ defmodule Sketch.TopKTest do
 
     test "creates a tracker with a valid CMS" do
       tk = TopK.new(3)
-      assert %Sketch.CountMinSketch{} = tk.cms
+      assert %Approx.CountMinSketch{} = tk.cms
     end
 
     test "accepts custom epsilon and delta" do

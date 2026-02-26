@@ -1,9 +1,9 @@
-defmodule Sketch.TDigestTest do
+defmodule Approx.TDigestTest do
   use ExUnit.Case, async: true
 
-  alias Sketch.TDigest
+  alias Approx.TDigest
 
-  doctest Sketch.TDigest
+  doctest Approx.TDigest
 
   # ---------------------------------------------------------------------------
   # Helpers
@@ -447,7 +447,7 @@ defmodule Sketch.TDigestTest do
 
     test "binary has correct structure" do
       td = TDigest.new() |> TDigest.add(1.0) |> TDigest.add(2.0) |> TDigest.add(3.0)
-      flushed = Sketch.TDigest.compress(td)
+      flushed = Approx.TDigest.compress(td)
       num_centroids = length(flushed.centroids)
 
       binary = TDigest.to_binary(td)
@@ -664,7 +664,7 @@ defmodule Sketch.TDigestTest do
   describe "compression" do
     test "number of centroids is bounded" do
       td = build(1..10_000)
-      flushed = Sketch.TDigest.compress(td)
+      flushed = Approx.TDigest.compress(td)
 
       # With delta=100, we expect O(delta) centroids. In a single-pass
       # implementation the count can reach up to ~5*delta due to the
@@ -675,8 +675,8 @@ defmodule Sketch.TDigestTest do
 
     test "compression is idempotent" do
       td = build(1..1000)
-      flushed1 = Sketch.TDigest.compress(td)
-      flushed2 = Sketch.TDigest.compress(flushed1)
+      flushed1 = Approx.TDigest.compress(td)
+      flushed2 = Approx.TDigest.compress(flushed1)
 
       assert flushed1.centroids == flushed2.centroids
       assert flushed1.buffer == flushed2.buffer
@@ -684,7 +684,7 @@ defmodule Sketch.TDigestTest do
 
     test "centroids are sorted by mean after compression" do
       td = build(Enum.shuffle(1..1000))
-      flushed = Sketch.TDigest.compress(td)
+      flushed = Approx.TDigest.compress(td)
 
       means = Enum.map(flushed.centroids, fn {mean, _weight} -> mean end)
       assert means == Enum.sort(means)
@@ -692,7 +692,7 @@ defmodule Sketch.TDigestTest do
 
     test "centroid weights sum to total_weight after compression" do
       td = build(1..500)
-      flushed = Sketch.TDigest.compress(td)
+      flushed = Approx.TDigest.compress(td)
 
       centroid_weight_sum =
         Enum.reduce(flushed.centroids, 0.0, fn {_mean, weight}, acc -> acc + weight end)
@@ -977,7 +977,7 @@ defmodule Sketch.TDigestTest do
   describe "sorted input" do
     test "ascending sorted input produces bounded centroids and accurate median" do
       td_sorted = build(1..10_000)
-      flushed_sorted = Sketch.TDigest.compress(td_sorted)
+      flushed_sorted = Approx.TDigest.compress(td_sorted)
 
       # Centroid count should be bounded by delta * 5
       assert length(flushed_sorted.centroids) < 100 * 5,

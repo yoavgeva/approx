@@ -1,4 +1,4 @@
-defmodule Sketch.Reservoir do
+defmodule Approx.Reservoir do
   @moduledoc """
   Reservoir Sampling (Algorithm R) for uniform random sampling from a stream.
 
@@ -25,11 +25,11 @@ defmodule Sketch.Reservoir do
 
   ## Examples
 
-      iex> r = Sketch.Reservoir.new(5, seed: 42)
-      iex> r = Sketch.Reservoir.add_all(r, 1..100)
-      iex> length(Sketch.Reservoir.sample(r))
+      iex> r = Approx.Reservoir.new(5, seed: 42)
+      iex> r = Approx.Reservoir.add_all(r, 1..100)
+      iex> length(Approx.Reservoir.sample(r))
       5
-      iex> Sketch.Reservoir.count(r)
+      iex> Approx.Reservoir.count(r)
       100
 
   ## Algorithm Complexity
@@ -73,15 +73,15 @@ defmodule Sketch.Reservoir do
 
   ## Examples
 
-      iex> r = Sketch.Reservoir.new(10)
+      iex> r = Approx.Reservoir.new(10)
       iex> r.k
       10
       iex> r.count
       0
-      iex> Sketch.Reservoir.sample(r)
+      iex> Approx.Reservoir.sample(r)
       []
 
-      iex> r = Sketch.Reservoir.new(3, seed: 123)
+      iex> r = Approx.Reservoir.new(3, seed: 123)
       iex> r.k
       3
 
@@ -116,19 +116,19 @@ defmodule Sketch.Reservoir do
 
   ## Examples
 
-      iex> r = Sketch.Reservoir.new(3, seed: 42)
-      iex> r = Sketch.Reservoir.add(r, :a)
-      iex> r = Sketch.Reservoir.add(r, :b)
-      iex> Sketch.Reservoir.sample(r)
+      iex> r = Approx.Reservoir.new(3, seed: 42)
+      iex> r = Approx.Reservoir.add(r, :a)
+      iex> r = Approx.Reservoir.add(r, :b)
+      iex> Approx.Reservoir.sample(r)
       [:a, :b]
-      iex> Sketch.Reservoir.count(r)
+      iex> Approx.Reservoir.count(r)
       2
 
-      iex> r = Sketch.Reservoir.new(2, seed: 42)
-      iex> r = Enum.reduce(1..1000, r, fn x, acc -> Sketch.Reservoir.add(acc, x) end)
-      iex> length(Sketch.Reservoir.sample(r))
+      iex> r = Approx.Reservoir.new(2, seed: 42)
+      iex> r = Enum.reduce(1..1000, r, fn x, acc -> Approx.Reservoir.add(acc, x) end)
+      iex> length(Approx.Reservoir.sample(r))
       2
-      iex> Sketch.Reservoir.count(r)
+      iex> Approx.Reservoir.count(r)
       1000
 
   """
@@ -182,18 +182,18 @@ defmodule Sketch.Reservoir do
 
   ## Examples
 
-      iex> r = Sketch.Reservoir.new(5, seed: 42)
-      iex> r = Sketch.Reservoir.add_all(r, [1, 2, 3])
-      iex> Sketch.Reservoir.sample(r)
+      iex> r = Approx.Reservoir.new(5, seed: 42)
+      iex> r = Approx.Reservoir.add_all(r, [1, 2, 3])
+      iex> Approx.Reservoir.sample(r)
       [1, 2, 3]
-      iex> Sketch.Reservoir.count(r)
+      iex> Approx.Reservoir.count(r)
       3
 
-      iex> r = Sketch.Reservoir.new(3, seed: 42)
-      iex> r = Sketch.Reservoir.add_all(r, 1..10_000)
-      iex> length(Sketch.Reservoir.sample(r))
+      iex> r = Approx.Reservoir.new(3, seed: 42)
+      iex> r = Approx.Reservoir.add_all(r, 1..10_000)
+      iex> length(Approx.Reservoir.sample(r))
       3
-      iex> Sketch.Reservoir.count(r)
+      iex> Approx.Reservoir.count(r)
       10_000
 
   """
@@ -219,18 +219,18 @@ defmodule Sketch.Reservoir do
 
   ## Examples
 
-      iex> r = Sketch.Reservoir.new(5, seed: 42)
-      iex> Sketch.Reservoir.sample(r)
+      iex> r = Approx.Reservoir.new(5, seed: 42)
+      iex> Approx.Reservoir.sample(r)
       []
 
-      iex> r = Sketch.Reservoir.new(5, seed: 42)
-      iex> r = Sketch.Reservoir.add_all(r, [:a, :b, :c])
-      iex> Sketch.Reservoir.sample(r)
+      iex> r = Approx.Reservoir.new(5, seed: 42)
+      iex> r = Approx.Reservoir.add_all(r, [:a, :b, :c])
+      iex> Approx.Reservoir.sample(r)
       [:a, :b, :c]
 
-      iex> r = Sketch.Reservoir.new(3, seed: 42)
-      iex> r = Sketch.Reservoir.add_all(r, 1..100)
-      iex> length(Sketch.Reservoir.sample(r))
+      iex> r = Approx.Reservoir.new(3, seed: 42)
+      iex> r = Approx.Reservoir.add_all(r, 1..100)
+      iex> length(Approx.Reservoir.sample(r))
       3
 
   """
@@ -254,13 +254,13 @@ defmodule Sketch.Reservoir do
 
   ## Examples
 
-      iex> r = Sketch.Reservoir.new(3, seed: 42)
-      iex> Sketch.Reservoir.count(r)
+      iex> r = Approx.Reservoir.new(3, seed: 42)
+      iex> Approx.Reservoir.count(r)
       0
 
-      iex> r = Sketch.Reservoir.new(3, seed: 42)
-      iex> r = Sketch.Reservoir.add_all(r, 1..100)
-      iex> Sketch.Reservoir.count(r)
+      iex> r = Approx.Reservoir.new(3, seed: 42)
+      iex> r = Approx.Reservoir.add_all(r, 1..100)
+      iex> Approx.Reservoir.count(r)
       100
 
   """
@@ -287,14 +287,14 @@ defmodule Sketch.Reservoir do
 
   ## Examples
 
-      iex> r1 = Sketch.Reservoir.new(5, seed: 42)
-      iex> r1 = Sketch.Reservoir.add_all(r1, 1..50)
-      iex> r2 = Sketch.Reservoir.new(5, seed: 99)
-      iex> r2 = Sketch.Reservoir.add_all(r2, 51..100)
-      iex> {:ok, merged} = Sketch.Reservoir.merge(r1, r2)
-      iex> Sketch.Reservoir.count(merged)
+      iex> r1 = Approx.Reservoir.new(5, seed: 42)
+      iex> r1 = Approx.Reservoir.add_all(r1, 1..50)
+      iex> r2 = Approx.Reservoir.new(5, seed: 99)
+      iex> r2 = Approx.Reservoir.add_all(r2, 51..100)
+      iex> {:ok, merged} = Approx.Reservoir.merge(r1, r2)
+      iex> Approx.Reservoir.count(merged)
       100
-      iex> length(Sketch.Reservoir.sample(merged))
+      iex> length(Approx.Reservoir.sample(merged))
       5
 
   """

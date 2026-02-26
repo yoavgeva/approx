@@ -1,4 +1,4 @@
-defmodule Sketch.HyperLogLog do
+defmodule Approx.HyperLogLog do
   @moduledoc """
   A HyperLogLog cardinality estimator.
 
@@ -31,9 +31,9 @@ defmodule Sketch.HyperLogLog do
 
   ## Examples
 
-      iex> hll = Sketch.HyperLogLog.new(10)
-      iex> hll = Enum.reduce(1..1000, hll, &Sketch.HyperLogLog.add(&2, &1))
-      iex> count = Sketch.HyperLogLog.count(hll)
+      iex> hll = Approx.HyperLogLog.new(10)
+      iex> hll = Enum.reduce(1..1000, hll, &Approx.HyperLogLog.add(&2, &1))
+      iex> count = Approx.HyperLogLog.count(hll)
       iex> abs(count - 1000) < 1000 * 0.1
       true
 
@@ -43,10 +43,10 @@ defmodule Sketch.HyperLogLog do
   for distributed counting. The merged result approximates the cardinality of
   the union of both input sets.
 
-      iex> hll1 = Enum.reduce(1..500, Sketch.HyperLogLog.new(10), &Sketch.HyperLogLog.add(&2, &1))
-      iex> hll2 = Enum.reduce(501..1000, Sketch.HyperLogLog.new(10), &Sketch.HyperLogLog.add(&2, &1))
-      iex> {:ok, merged} = Sketch.HyperLogLog.merge(hll1, hll2)
-      iex> count = Sketch.HyperLogLog.count(merged)
+      iex> hll1 = Enum.reduce(1..500, Approx.HyperLogLog.new(10), &Approx.HyperLogLog.add(&2, &1))
+      iex> hll2 = Enum.reduce(501..1000, Approx.HyperLogLog.new(10), &Approx.HyperLogLog.add(&2, &1))
+      iex> {:ok, merged} = Approx.HyperLogLog.merge(hll1, hll2)
+      iex> count = Approx.HyperLogLog.count(merged)
       iex> abs(count - 1000) < 1000 * 0.1
       true
 
@@ -55,11 +55,11 @@ defmodule Sketch.HyperLogLog do
   Structures can be serialized to a compact binary for storage or transmission
   and deserialized back with no loss of information.
 
-      iex> hll = Sketch.HyperLogLog.new(4)
-      iex> hll = Sketch.HyperLogLog.add(hll, "hello")
-      iex> binary = Sketch.HyperLogLog.to_binary(hll)
-      iex> {:ok, restored} = Sketch.HyperLogLog.from_binary(binary)
-      iex> Sketch.HyperLogLog.count(restored) == Sketch.HyperLogLog.count(hll)
+      iex> hll = Approx.HyperLogLog.new(4)
+      iex> hll = Approx.HyperLogLog.add(hll, "hello")
+      iex> binary = Approx.HyperLogLog.to_binary(hll)
+      iex> {:ok, restored} = Approx.HyperLogLog.from_binary(binary)
+      iex> Approx.HyperLogLog.count(restored) == Approx.HyperLogLog.count(hll)
       true
   """
 
@@ -109,7 +109,7 @@ defmodule Sketch.HyperLogLog do
 
   ## Returns
 
-  A new `%Sketch.HyperLogLog{}` struct with all registers initialized to zero.
+  A new `%Approx.HyperLogLog{}` struct with all registers initialized to zero.
 
   ## Raises
 
@@ -117,15 +117,15 @@ defmodule Sketch.HyperLogLog do
 
   ## Examples
 
-      iex> hll = Sketch.HyperLogLog.new()
+      iex> hll = Approx.HyperLogLog.new()
       iex> hll.precision
       14
 
-      iex> hll = Sketch.HyperLogLog.new(8)
+      iex> hll = Approx.HyperLogLog.new(8)
       iex> hll.precision
       8
 
-      iex> hll = Sketch.HyperLogLog.new(4, hash_fn: fn term -> :erlang.phash2(term, 4294967296) end)
+      iex> hll = Approx.HyperLogLog.new(4, hash_fn: fn term -> :erlang.phash2(term, 4294967296) end)
       iex> hll.precision
       4
   """
@@ -135,7 +135,7 @@ defmodule Sketch.HyperLogLog do
   def new(precision, opts)
       when is_integer(precision) and precision >= @min_precision and precision <= @max_precision do
     m = bsl(1, precision)
-    hash_fn = Keyword.get(opts, :hash_fn, &Sketch.Hash.hash32/1)
+    hash_fn = Keyword.get(opts, :hash_fn, &Approx.Hash.hash32/1)
 
     %__MODULE__{
       registers: :erlang.make_tuple(m, 0),
@@ -158,23 +158,23 @@ defmodule Sketch.HyperLogLog do
 
   ## Parameters
 
-    * `hll` — A `%Sketch.HyperLogLog{}` struct.
+    * `hll` — A `%Approx.HyperLogLog{}` struct.
     * `element` — Any term to add.
 
   ## Returns
 
-  An updated `%Sketch.HyperLogLog{}` struct.
+  An updated `%Approx.HyperLogLog{}` struct.
 
   ## Examples
 
-      iex> hll = Sketch.HyperLogLog.new(4)
-      iex> hll = Sketch.HyperLogLog.add(hll, "hello")
-      iex> Sketch.HyperLogLog.count(hll) >= 1
+      iex> hll = Approx.HyperLogLog.new(4)
+      iex> hll = Approx.HyperLogLog.add(hll, "hello")
+      iex> Approx.HyperLogLog.count(hll) >= 1
       true
 
-      iex> hll = Sketch.HyperLogLog.new(4)
-      iex> hll = Sketch.HyperLogLog.add(hll, :atom_value)
-      iex> Sketch.HyperLogLog.count(hll) >= 1
+      iex> hll = Approx.HyperLogLog.new(4)
+      iex> hll = Approx.HyperLogLog.add(hll, :atom_value)
+      iex> Approx.HyperLogLog.count(hll) >= 1
       true
   """
   @spec add(t(), term()) :: t()
@@ -207,7 +207,7 @@ defmodule Sketch.HyperLogLog do
 
   ## Parameters
 
-    * `hll` — A `%Sketch.HyperLogLog{}` struct.
+    * `hll` — A `%Approx.HyperLogLog{}` struct.
 
   ## Returns
 
@@ -215,11 +215,11 @@ defmodule Sketch.HyperLogLog do
 
   ## Examples
 
-      iex> Sketch.HyperLogLog.count(Sketch.HyperLogLog.new())
+      iex> Approx.HyperLogLog.count(Approx.HyperLogLog.new())
       0
 
-      iex> hll = Enum.reduce(1..100, Sketch.HyperLogLog.new(14), &Sketch.HyperLogLog.add(&2, &1))
-      iex> count = Sketch.HyperLogLog.count(hll)
+      iex> hll = Enum.reduce(1..100, Approx.HyperLogLog.new(14), &Approx.HyperLogLog.add(&2, &1))
+      iex> count = Approx.HyperLogLog.count(hll)
       iex> count > 0
       true
   """
@@ -260,8 +260,8 @@ defmodule Sketch.HyperLogLog do
 
   ## Parameters
 
-    * `hll1` — A `%Sketch.HyperLogLog{}` struct.
-    * `hll2` — A `%Sketch.HyperLogLog{}` struct with the same precision as `hll1`.
+    * `hll1` — A `%Approx.HyperLogLog{}` struct.
+    * `hll2` — A `%Approx.HyperLogLog{}` struct with the same precision as `hll1`.
 
   ## Returns
 
@@ -270,10 +270,10 @@ defmodule Sketch.HyperLogLog do
 
   ## Examples
 
-      iex> hll1 = Sketch.HyperLogLog.add(Sketch.HyperLogLog.new(4), "a")
-      iex> hll2 = Sketch.HyperLogLog.add(Sketch.HyperLogLog.new(4), "b")
-      iex> {:ok, merged} = Sketch.HyperLogLog.merge(hll1, hll2)
-      iex> Sketch.HyperLogLog.count(merged) >= 1
+      iex> hll1 = Approx.HyperLogLog.add(Approx.HyperLogLog.new(4), "a")
+      iex> hll2 = Approx.HyperLogLog.add(Approx.HyperLogLog.new(4), "b")
+      iex> {:ok, merged} = Approx.HyperLogLog.merge(hll1, hll2)
+      iex> Approx.HyperLogLog.count(merged) >= 1
       true
   """
   @spec merge(t(), t()) :: {:ok, t()} | {:error, :incompatible_precision}
@@ -301,7 +301,7 @@ defmodule Sketch.HyperLogLog do
 
   ## Parameters
 
-    * `hll` — A `%Sketch.HyperLogLog{}` struct.
+    * `hll` — A `%Approx.HyperLogLog{}` struct.
 
   ## Returns
 
@@ -309,13 +309,13 @@ defmodule Sketch.HyperLogLog do
 
   ## Examples
 
-      iex> hll = Sketch.HyperLogLog.new(4)
-      iex> binary = Sketch.HyperLogLog.to_binary(hll)
+      iex> hll = Approx.HyperLogLog.new(4)
+      iex> binary = Approx.HyperLogLog.to_binary(hll)
       iex> is_binary(binary)
       true
 
-      iex> hll = Sketch.HyperLogLog.new(4)
-      iex> binary = Sketch.HyperLogLog.to_binary(hll)
+      iex> hll = Approx.HyperLogLog.new(4)
+      iex> binary = Approx.HyperLogLog.to_binary(hll)
       iex> byte_size(binary)
       18
   """
@@ -346,10 +346,10 @@ defmodule Sketch.HyperLogLog do
 
   ## Examples
 
-      iex> hll = Sketch.HyperLogLog.new(4)
-      iex> hll = Sketch.HyperLogLog.add(hll, "test")
-      iex> {:ok, restored} = Sketch.HyperLogLog.from_binary(Sketch.HyperLogLog.to_binary(hll))
-      iex> Sketch.HyperLogLog.count(restored) == Sketch.HyperLogLog.count(hll)
+      iex> hll = Approx.HyperLogLog.new(4)
+      iex> hll = Approx.HyperLogLog.add(hll, "test")
+      iex> {:ok, restored} = Approx.HyperLogLog.from_binary(Approx.HyperLogLog.to_binary(hll))
+      iex> Approx.HyperLogLog.count(restored) == Approx.HyperLogLog.count(hll)
       true
   """
   @spec from_binary(binary(), keyword()) :: {:ok, t()} | {:error, :invalid_binary}
@@ -363,7 +363,7 @@ defmodule Sketch.HyperLogLog do
       {:error, :invalid_binary}
     else
       registers = binary_to_registers(register_bytes, m)
-      hash_fn = Keyword.get(opts, :hash_fn, &Sketch.Hash.hash32/1)
+      hash_fn = Keyword.get(opts, :hash_fn, &Approx.Hash.hash32/1)
 
       {:ok,
        %__MODULE__{

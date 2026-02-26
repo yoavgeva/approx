@@ -1,7 +1,7 @@
 # Distributed Merging
 
-Every probabilistic data structure in Sketch is designed from the ground up to
-be **mergeable** and **serializable**. This makes Sketch a natural fit for
+Every probabilistic data structure in Approx is designed from the ground up to
+be **mergeable** and **serializable**. This makes Approx a natural fit for
 distributed systems where data arrives at many nodes and you need a unified
 global view without ever shipping raw data.
 
@@ -43,8 +43,8 @@ Each node builds its own sketch from its local data stream:
 
 ```elixir
 # On node A
-hll_a = Sketch.HyperLogLog.new(14)
-hll_a = Enum.reduce(events_a, hll_a, &Sketch.HyperLogLog.add(&2, &1))
+hll_a = Approx.HyperLogLog.new(14)
+hll_a = Enum.reduce(events_a, hll_a, &Approx.HyperLogLog.add(&2, &1))
 ```
 
 ### 2. Serialize
@@ -52,7 +52,7 @@ hll_a = Enum.reduce(events_a, hll_a, &Sketch.HyperLogLog.add(&2, &1))
 Convert the sketch to a compact binary with `to_binary/1`:
 
 ```elixir
-bin_a = Sketch.HyperLogLog.to_binary(hll_a)
+bin_a = Approx.HyperLogLog.to_binary(hll_a)
 # => <<1, 14, 0, 0, 3, ...>>  (16 KiB + 2-byte header)
 ```
 
@@ -71,7 +71,7 @@ GenServer.cast(aggregator, {:sketch, :node_a, bin_a})
 On the receiving side, restore the sketch from the binary with `from_binary/1`:
 
 ```elixir
-{:ok, restored_a} = Sketch.HyperLogLog.from_binary(bin_a)
+{:ok, restored_a} = Approx.HyperLogLog.from_binary(bin_a)
 ```
 
 ### 5. Merge
@@ -79,8 +79,8 @@ On the receiving side, restore the sketch from the binary with `from_binary/1`:
 Combine two sketches into one with `merge/2`:
 
 ```elixir
-{:ok, merged} = Sketch.HyperLogLog.merge(restored_a, restored_b)
-Sketch.HyperLogLog.count(merged)
+{:ok, merged} = Approx.HyperLogLog.merge(restored_a, restored_b)
+Approx.HyperLogLog.count(merged)
 # => the estimated cardinality of the union of both streams
 ```
 
@@ -115,22 +115,22 @@ the HyperLogLog approximates the cardinality of the union.
 
 ```elixir
 # Build on node A -- users 1..500_000
-hll_a = Sketch.HyperLogLog.new(14)
-hll_a = Enum.reduce(1..500_000, hll_a, &Sketch.HyperLogLog.add(&2, &1))
+hll_a = Approx.HyperLogLog.new(14)
+hll_a = Enum.reduce(1..500_000, hll_a, &Approx.HyperLogLog.add(&2, &1))
 
 # Build on node B -- users 250_000..750_000 (overlapping)
-hll_b = Sketch.HyperLogLog.new(14)
-hll_b = Enum.reduce(250_000..750_000, hll_b, &Sketch.HyperLogLog.add(&2, &1))
+hll_b = Approx.HyperLogLog.new(14)
+hll_b = Enum.reduce(250_000..750_000, hll_b, &Approx.HyperLogLog.add(&2, &1))
 
 # Serialize, transfer, deserialize
-bin_a = Sketch.HyperLogLog.to_binary(hll_a)
-bin_b = Sketch.HyperLogLog.to_binary(hll_b)
-{:ok, restored_a} = Sketch.HyperLogLog.from_binary(bin_a)
-{:ok, restored_b} = Sketch.HyperLogLog.from_binary(bin_b)
+bin_a = Approx.HyperLogLog.to_binary(hll_a)
+bin_b = Approx.HyperLogLog.to_binary(hll_b)
+{:ok, restored_a} = Approx.HyperLogLog.from_binary(bin_a)
+{:ok, restored_b} = Approx.HyperLogLog.from_binary(bin_b)
 
 # Merge
-{:ok, merged} = Sketch.HyperLogLog.merge(restored_a, restored_b)
-Sketch.HyperLogLog.count(merged)
+{:ok, merged} = Approx.HyperLogLog.merge(restored_a, restored_b)
+Approx.HyperLogLog.count(merged)
 # => ~750_000 (the union of 1..500k and 250k..750k)
 ```
 
@@ -141,22 +141,22 @@ all nodes to get global counts for rate limiting decisions.
 
 ```elixir
 # Node A -- 50 requests from "client_42"
-cms_a = Sketch.CountMinSketch.new(0.001, 0.01)
-cms_a = Sketch.CountMinSketch.add(cms_a, "client_42", 50)
+cms_a = Approx.CountMinSketch.new(0.001, 0.01)
+cms_a = Approx.CountMinSketch.add(cms_a, "client_42", 50)
 
 # Node B -- 30 more requests from the same client
-cms_b = Sketch.CountMinSketch.new(0.001, 0.01)
-cms_b = Sketch.CountMinSketch.add(cms_b, "client_42", 30)
+cms_b = Approx.CountMinSketch.new(0.001, 0.01)
+cms_b = Approx.CountMinSketch.add(cms_b, "client_42", 30)
 
 # Serialize, transfer, deserialize
-bin_a = Sketch.CountMinSketch.to_binary(cms_a)
-bin_b = Sketch.CountMinSketch.to_binary(cms_b)
-{:ok, restored_a} = Sketch.CountMinSketch.from_binary(bin_a)
-{:ok, restored_b} = Sketch.CountMinSketch.from_binary(bin_b)
+bin_a = Approx.CountMinSketch.to_binary(cms_a)
+bin_b = Approx.CountMinSketch.to_binary(cms_b)
+{:ok, restored_a} = Approx.CountMinSketch.from_binary(bin_a)
+{:ok, restored_b} = Approx.CountMinSketch.from_binary(bin_b)
 
 # Merge -- counters are summed element-wise
-{:ok, merged} = Sketch.CountMinSketch.merge(restored_a, restored_b)
-Sketch.CountMinSketch.count(merged, "client_42")
+{:ok, merged} = Approx.CountMinSketch.merge(restored_a, restored_b)
+Approx.CountMinSketch.count(merged, "client_42")
 # => 80 (50 + 30)
 ```
 
@@ -167,30 +167,30 @@ you merge them so the next round of workers can skip already-processed events.
 
 ```elixir
 # Worker 1 -- processed events "evt_1" through "evt_100"
-bf1 = Sketch.BloomFilter.new(1_000)
+bf1 = Approx.BloomFilter.new(1_000)
 bf1 = Enum.reduce(1..100, bf1, fn i, bf ->
-  Sketch.BloomFilter.add(bf, "evt_#{i}")
+  Approx.BloomFilter.add(bf, "evt_#{i}")
 end)
 
 # Worker 2 -- processed events "evt_50" through "evt_200"
-bf2 = Sketch.BloomFilter.new(1_000)
+bf2 = Approx.BloomFilter.new(1_000)
 bf2 = Enum.reduce(50..200, bf2, fn i, bf ->
-  Sketch.BloomFilter.add(bf, "evt_#{i}")
+  Approx.BloomFilter.add(bf, "evt_#{i}")
 end)
 
 # Serialize, transfer, deserialize
-bin1 = Sketch.BloomFilter.to_binary(bf1)
-bin2 = Sketch.BloomFilter.to_binary(bf2)
-{:ok, restored1} = Sketch.BloomFilter.from_binary(bin1)
-{:ok, restored2} = Sketch.BloomFilter.from_binary(bin2)
+bin1 = Approx.BloomFilter.to_binary(bf1)
+bin2 = Approx.BloomFilter.to_binary(bf2)
+{:ok, restored1} = Approx.BloomFilter.from_binary(bin1)
+{:ok, restored2} = Approx.BloomFilter.from_binary(bin2)
 
 # Merge -- bitwise OR of the underlying bit arrays
-{:ok, merged} = Sketch.BloomFilter.merge(restored1, restored2)
+{:ok, merged} = Approx.BloomFilter.merge(restored1, restored2)
 
 # The merged filter knows about all events from both workers
-Sketch.BloomFilter.member?(merged, "evt_1")    # => true
-Sketch.BloomFilter.member?(merged, "evt_150")   # => true
-Sketch.BloomFilter.member?(merged, "evt_999")   # => false (definitely not seen)
+Approx.BloomFilter.member?(merged, "evt_1")    # => true
+Approx.BloomFilter.member?(merged, "evt_150")   # => true
+Approx.BloomFilter.member?(merged, "evt_999")   # => false (definitely not seen)
 ```
 
 ### t-digest -- merge hourly latency digests into a daily view
@@ -200,34 +200,34 @@ merge all 24 digests to compute daily percentiles.
 
 ```elixir
 # Hour 1 -- fast responses (10-50ms)
-td_hour1 = Sketch.TDigest.new(100)
+td_hour1 = Approx.TDigest.new(100)
 td_hour1 = Enum.reduce(1..10_000, td_hour1, fn _, td ->
   latency = 10.0 + :rand.uniform() * 40.0
-  Sketch.TDigest.add(td, latency)
+  Approx.TDigest.add(td, latency)
 end)
 
 # Hour 2 -- peak traffic with some slow responses (10-200ms)
-td_hour2 = Sketch.TDigest.new(100)
+td_hour2 = Approx.TDigest.new(100)
 td_hour2 = Enum.reduce(1..10_000, td_hour2, fn _, td ->
   latency = 10.0 + :rand.uniform() * 190.0
-  Sketch.TDigest.add(td, latency)
+  Approx.TDigest.add(td, latency)
 end)
 
 # Serialize, transfer, deserialize
-bin1 = Sketch.TDigest.to_binary(td_hour1)
-bin2 = Sketch.TDigest.to_binary(td_hour2)
-{:ok, restored1} = Sketch.TDigest.from_binary(bin1)
-{:ok, restored2} = Sketch.TDigest.from_binary(bin2)
+bin1 = Approx.TDigest.to_binary(td_hour1)
+bin2 = Approx.TDigest.to_binary(td_hour2)
+{:ok, restored1} = Approx.TDigest.from_binary(bin1)
+{:ok, restored2} = Approx.TDigest.from_binary(bin2)
 
 # Merge -- combines centroids and recompresses
-merged = Sketch.TDigest.merge(restored1, restored2)
+merged = Approx.TDigest.merge(restored1, restored2)
 
-Sketch.TDigest.count(merged)
+Approx.TDigest.count(merged)
 # => 20_000.0
 
-Sketch.TDigest.percentile(merged, 0.50)   # median
-Sketch.TDigest.percentile(merged, 0.99)   # p99
-Sketch.TDigest.percentile(merged, 0.999)  # p99.9
+Approx.TDigest.percentile(merged, 0.50)   # median
+Approx.TDigest.percentile(merged, 0.99)   # p99
+Approx.TDigest.percentile(merged, 0.999)  # p99.9
 ```
 
 Note that `TDigest.merge/2` returns the merged struct directly (not a tagged
@@ -257,27 +257,27 @@ merged result.
 
 ```elixir
 # HyperLogLog -- different precisions
-hll_a = Sketch.HyperLogLog.new(10)
-hll_b = Sketch.HyperLogLog.new(14)
-Sketch.HyperLogLog.merge(hll_a, hll_b)
+hll_a = Approx.HyperLogLog.new(10)
+hll_b = Approx.HyperLogLog.new(14)
+Approx.HyperLogLog.merge(hll_a, hll_b)
 # => {:error, :incompatible_precision}
 
 # BloomFilter -- different capacities produce different sizes
-bf_a = Sketch.BloomFilter.new(100)
-bf_b = Sketch.BloomFilter.new(10_000)
-Sketch.BloomFilter.merge(bf_a, bf_b)
+bf_a = Approx.BloomFilter.new(100)
+bf_b = Approx.BloomFilter.new(10_000)
+Approx.BloomFilter.merge(bf_a, bf_b)
 # => {:error, :incompatible_filters}
 
 # CountMinSketch -- different epsilon values produce different widths
-cms_a = Sketch.CountMinSketch.new(0.001, 0.01)
-cms_b = Sketch.CountMinSketch.new(0.01, 0.01)
-Sketch.CountMinSketch.merge(cms_a, cms_b)
+cms_a = Approx.CountMinSketch.new(0.001, 0.01)
+cms_b = Approx.CountMinSketch.new(0.01, 0.01)
+Approx.CountMinSketch.merge(cms_a, cms_b)
 # => {:error, :dimension_mismatch}
 
 # Reservoir -- different k values
-r_a = Sketch.Reservoir.new(10)
-r_b = Sketch.Reservoir.new(20)
-Sketch.Reservoir.merge(r_a, r_b)
+r_a = Approx.Reservoir.new(10)
+r_b = Approx.Reservoir.new(20)
+Approx.Reservoir.merge(r_a, r_b)
 # => {:error, :incompatible_size}
 ```
 
@@ -285,7 +285,7 @@ The fix is simple: make sure all nodes use the same creation parameters. Define
 them in a shared configuration module:
 
 ```elixir
-defmodule MyApp.SketchConfig do
+defmodule MyApp.ApproxConfig do
   @moduledoc """
   Centralized sketch configuration so all nodes use compatible parameters.
   """
@@ -354,14 +354,14 @@ defmodule MyApp.SketchAggregator do
 
   @impl true
   def init(precision) do
-    {:ok, Sketch.HyperLogLog.new(precision)}
+    {:ok, Approx.HyperLogLog.new(precision)}
   end
 
   @impl true
   def handle_cast({:submit, binary}, global_hll) do
-    case Sketch.HyperLogLog.from_binary(binary) do
+    case Approx.HyperLogLog.from_binary(binary) do
       {:ok, incoming_hll} ->
-        case Sketch.HyperLogLog.merge(global_hll, incoming_hll) do
+        case Approx.HyperLogLog.merge(global_hll, incoming_hll) do
           {:ok, merged} ->
             {:noreply, merged}
 
@@ -378,12 +378,12 @@ defmodule MyApp.SketchAggregator do
 
   @impl true
   def handle_call(:count, _from, global_hll) do
-    {:reply, Sketch.HyperLogLog.count(global_hll), global_hll}
+    {:reply, Approx.HyperLogLog.count(global_hll), global_hll}
   end
 
   @impl true
   def handle_call(:snapshot, _from, global_hll) do
-    {:reply, Sketch.HyperLogLog.to_binary(global_hll), global_hll}
+    {:reply, Approx.HyperLogLog.to_binary(global_hll), global_hll}
   end
 end
 ```
@@ -397,7 +397,7 @@ children = [
 ]
 
 # On each worker node -- periodically send the local sketch
-binary = Sketch.HyperLogLog.to_binary(local_hll)
+binary = Approx.HyperLogLog.to_binary(local_hll)
 MyApp.SketchAggregator.submit(binary)
 
 # From anywhere -- query the global estimate

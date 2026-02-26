@@ -1,4 +1,4 @@
-defmodule Sketch.CuckooFilter do
+defmodule Approx.CuckooFilter do
   @moduledoc """
   A Cuckoo filter — a space-efficient probabilistic set that supports
   insertion, membership queries, **and deletion**.
@@ -21,20 +21,20 @@ defmodule Sketch.CuckooFilter do
   the smallest power of 2 that fits `ceil(capacity / 4)` (minimum 2 buckets),
   giving roughly 95 % load factor headroom before eviction pressure rises.
 
-      cf = Sketch.CuckooFilter.new(1_000)
+      cf = Approx.CuckooFilter.new(1_000)
 
   ## Inserting, querying, and deleting
 
-      {:ok, cf} = Sketch.CuckooFilter.insert(cf, "hello")
-      Sketch.CuckooFilter.member?(cf, "hello")   # => true
+      {:ok, cf} = Approx.CuckooFilter.insert(cf, "hello")
+      Approx.CuckooFilter.member?(cf, "hello")   # => true
 
-      {:ok, cf} = Sketch.CuckooFilter.delete(cf, "hello")
-      Sketch.CuckooFilter.member?(cf, "hello")   # => false
+      {:ok, cf} = Approx.CuckooFilter.delete(cf, "hello")
+      Approx.CuckooFilter.member?(cf, "hello")   # => false
 
   ## Serialization
 
-      bin = Sketch.CuckooFilter.to_binary(cf)
-      {:ok, cf} = Sketch.CuckooFilter.from_binary(bin)
+      bin = Approx.CuckooFilter.to_binary(cf)
+      {:ok, cf} = Approx.CuckooFilter.from_binary(bin)
 
   The wire format is:
 
@@ -112,12 +112,12 @@ defmodule Sketch.CuckooFilter do
 
   ## Examples
 
-      iex> cf = Sketch.CuckooFilter.new(100)
-      iex> {:ok, cf} = Sketch.CuckooFilter.insert(cf, "test")
-      iex> Sketch.CuckooFilter.member?(cf, "test")
+      iex> cf = Approx.CuckooFilter.new(100)
+      iex> {:ok, cf} = Approx.CuckooFilter.insert(cf, "test")
+      iex> Approx.CuckooFilter.member?(cf, "test")
       true
 
-      iex> cf = Sketch.CuckooFilter.new(16)
+      iex> cf = Approx.CuckooFilter.new(16)
       iex> cf.count
       0
   """
@@ -125,7 +125,7 @@ defmodule Sketch.CuckooFilter do
   def new(capacity, opts \\ []) when is_integer(capacity) and capacity > 0 do
     num_buckets = next_power_of_two(ceil(capacity / @default_bucket_size))
     num_buckets = max(num_buckets, 2)
-    hash_fn = Keyword.get(opts, :hash_fn, &Sketch.Hash.hash32/1)
+    hash_fn = Keyword.get(opts, :hash_fn, &Approx.Hash.hash32/1)
 
     seed =
       case Keyword.get(opts, :seed) do
@@ -160,7 +160,7 @@ defmodule Sketch.CuckooFilter do
 
   ## Parameters
 
-    * `cf` — a `%Sketch.CuckooFilter{}` struct.
+    * `cf` — a `%Approx.CuckooFilter{}` struct.
     * `element` — any Erlang/Elixir term.
 
   ## Returns
@@ -170,13 +170,13 @@ defmodule Sketch.CuckooFilter do
 
   ## Examples
 
-      iex> cf = Sketch.CuckooFilter.new(100)
-      iex> {:ok, cf} = Sketch.CuckooFilter.insert(cf, "hello")
-      iex> Sketch.CuckooFilter.member?(cf, "hello")
+      iex> cf = Approx.CuckooFilter.new(100)
+      iex> {:ok, cf} = Approx.CuckooFilter.insert(cf, "hello")
+      iex> Approx.CuckooFilter.member?(cf, "hello")
       true
 
-      iex> cf = Sketch.CuckooFilter.new(100)
-      iex> {:ok, cf} = Sketch.CuckooFilter.insert(cf, 42)
+      iex> cf = Approx.CuckooFilter.new(100)
+      iex> {:ok, cf} = Approx.CuckooFilter.insert(cf, 42)
       iex> cf.count
       1
   """
@@ -207,9 +207,9 @@ defmodule Sketch.CuckooFilter do
 
   ## Examples
 
-      iex> cf = Sketch.CuckooFilter.new(100)
-      iex> {:ok, cf} = Sketch.CuckooFilter.add(cf, "hello")
-      iex> Sketch.CuckooFilter.member?(cf, "hello")
+      iex> cf = Approx.CuckooFilter.new(100)
+      iex> {:ok, cf} = Approx.CuckooFilter.add(cf, "hello")
+      iex> Approx.CuckooFilter.member?(cf, "hello")
       true
   """
   @spec add(t(), term()) :: {:ok, t()} | {:error, :full}
@@ -228,7 +228,7 @@ defmodule Sketch.CuckooFilter do
 
   ## Parameters
 
-    * `cf` — a `%Sketch.CuckooFilter{}` struct.
+    * `cf` — a `%Approx.CuckooFilter{}` struct.
     * `element` — any Erlang/Elixir term.
 
   ## Returns
@@ -238,13 +238,13 @@ defmodule Sketch.CuckooFilter do
 
   ## Examples
 
-      iex> cf = Sketch.CuckooFilter.new(100)
-      iex> Sketch.CuckooFilter.member?(cf, "ghost")
+      iex> cf = Approx.CuckooFilter.new(100)
+      iex> Approx.CuckooFilter.member?(cf, "ghost")
       false
 
-      iex> cf = Sketch.CuckooFilter.new(100)
-      iex> {:ok, cf} = Sketch.CuckooFilter.insert(cf, "present")
-      iex> Sketch.CuckooFilter.member?(cf, "present")
+      iex> cf = Approx.CuckooFilter.new(100)
+      iex> {:ok, cf} = Approx.CuckooFilter.insert(cf, "present")
+      iex> Approx.CuckooFilter.member?(cf, "present")
       true
   """
   @spec member?(t(), term()) :: boolean()
@@ -272,7 +272,7 @@ defmodule Sketch.CuckooFilter do
 
   ## Parameters
 
-    * `cf` — a `%Sketch.CuckooFilter{}` struct.
+    * `cf` — a `%Approx.CuckooFilter{}` struct.
     * `element` — any Erlang/Elixir term.
 
   ## Returns
@@ -282,14 +282,14 @@ defmodule Sketch.CuckooFilter do
 
   ## Examples
 
-      iex> cf = Sketch.CuckooFilter.new(100)
-      iex> {:ok, cf} = Sketch.CuckooFilter.insert(cf, "bye")
-      iex> {:ok, cf} = Sketch.CuckooFilter.delete(cf, "bye")
-      iex> Sketch.CuckooFilter.member?(cf, "bye")
+      iex> cf = Approx.CuckooFilter.new(100)
+      iex> {:ok, cf} = Approx.CuckooFilter.insert(cf, "bye")
+      iex> {:ok, cf} = Approx.CuckooFilter.delete(cf, "bye")
+      iex> Approx.CuckooFilter.member?(cf, "bye")
       false
 
-      iex> cf = Sketch.CuckooFilter.new(100)
-      iex> {:error, :not_found} = Sketch.CuckooFilter.delete(cf, "missing")
+      iex> cf = Approx.CuckooFilter.new(100)
+      iex> {:error, :not_found} = Approx.CuckooFilter.delete(cf, "missing")
       iex> cf.count
       0
   """
@@ -334,10 +334,10 @@ defmodule Sketch.CuckooFilter do
 
   ## Examples
 
-      iex> cf = Sketch.CuckooFilter.new(100)
-      iex> {:ok, cf} = Sketch.CuckooFilter.insert(cf, "round_trip")
-      iex> {:ok, restored} = cf |> Sketch.CuckooFilter.to_binary() |> Sketch.CuckooFilter.from_binary()
-      iex> Sketch.CuckooFilter.member?(restored, "round_trip")
+      iex> cf = Approx.CuckooFilter.new(100)
+      iex> {:ok, cf} = Approx.CuckooFilter.insert(cf, "round_trip")
+      iex> {:ok, restored} = cf |> Approx.CuckooFilter.to_binary() |> Approx.CuckooFilter.from_binary()
+      iex> Approx.CuckooFilter.member?(restored, "round_trip")
       true
   """
   @spec to_binary(t()) :: binary()
@@ -377,10 +377,10 @@ defmodule Sketch.CuckooFilter do
 
   ## Examples
 
-      iex> cf = Sketch.CuckooFilter.new(100)
-      iex> {:ok, cf} = Sketch.CuckooFilter.insert(cf, "round_trip")
-      iex> {:ok, restored} = cf |> Sketch.CuckooFilter.to_binary() |> Sketch.CuckooFilter.from_binary()
-      iex> Sketch.CuckooFilter.member?(restored, "round_trip")
+      iex> cf = Approx.CuckooFilter.new(100)
+      iex> {:ok, cf} = Approx.CuckooFilter.insert(cf, "round_trip")
+      iex> {:ok, restored} = cf |> Approx.CuckooFilter.to_binary() |> Approx.CuckooFilter.from_binary()
+      iex> Approx.CuckooFilter.member?(restored, "round_trip")
       true
   """
   @spec from_binary(binary(), keyword()) :: {:ok, t()} | {:error, :invalid_binary}
@@ -396,7 +396,7 @@ defmodule Sketch.CuckooFilter do
     if byte_size(bucket_data) == expected_bytes and num_buckets >= 2 and
          power_of_two?(num_buckets) do
       buckets = deserialize_buckets(bucket_data, num_buckets)
-      hash_fn = Keyword.get(opts, :hash_fn, &Sketch.Hash.hash32/1)
+      hash_fn = Keyword.get(opts, :hash_fn, &Approx.Hash.hash32/1)
 
       seed =
         case Keyword.get(opts, :seed) do

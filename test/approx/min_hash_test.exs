@@ -1,9 +1,9 @@
-defmodule Sketch.MinHashTest do
+defmodule Approx.MinHashTest do
   use ExUnit.Case, async: true
 
-  alias Sketch.MinHash
+  alias Approx.MinHash
 
-  doctest Sketch.MinHash
+  doctest Approx.MinHash
 
   # All tests use a fixed seed for determinism unless testing random behavior.
   @seed 12_345

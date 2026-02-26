@@ -1,4 +1,4 @@
-defmodule Sketch.CountMinSketch do
+defmodule Approx.CountMinSketch do
   @moduledoc """
   A Count-Min Sketch for frequency estimation of elements in a stream.
 
@@ -18,7 +18,7 @@ defmodule Sketch.CountMinSketch do
 
   ## Storage
 
-  The sketch is stored as a tuple of tuples (a 2-D array) with `depth` rows
+  The approx is stored as a tuple of tuples (a 2-D array) with `depth` rows
   and `width` columns, where:
 
     * `width  = ceil(e / epsilon)`
@@ -37,13 +37,13 @@ defmodule Sketch.CountMinSketch do
 
   ## Examples
 
-      iex> cms = Sketch.CountMinSketch.new()
-      iex> cms = Sketch.CountMinSketch.add(cms, "hello", 5)
-      iex> Sketch.CountMinSketch.count(cms, "hello") >= 5
+      iex> cms = Approx.CountMinSketch.new()
+      iex> cms = Approx.CountMinSketch.add(cms, "hello", 5)
+      iex> Approx.CountMinSketch.count(cms, "hello") >= 5
       true
 
-      iex> cms = Sketch.CountMinSketch.new()
-      iex> Sketch.CountMinSketch.count(cms, "missing")
+      iex> cms = Approx.CountMinSketch.new()
+      iex> Approx.CountMinSketch.count(cms, "missing")
       0
   """
 
@@ -80,7 +80,7 @@ defmodule Sketch.CountMinSketch do
 
   ## Returns
 
-    A `%Sketch.CountMinSketch{}` struct.
+    A `%Approx.CountMinSketch{}` struct.
 
   ## Raises
 
@@ -88,11 +88,11 @@ defmodule Sketch.CountMinSketch do
 
   ## Examples
 
-      iex> cms = Sketch.CountMinSketch.new()
+      iex> cms = Approx.CountMinSketch.new()
       iex> cms.width
       2719
 
-      iex> cms = Sketch.CountMinSketch.new(0.01, 0.05)
+      iex> cms = Approx.CountMinSketch.new(0.01, 0.05)
       iex> cms.depth
       3
   """
@@ -102,7 +102,7 @@ defmodule Sketch.CountMinSketch do
 
     width = (:math.exp(1) / epsilon) |> ceil()
     depth = :math.log(1.0 / delta) |> ceil()
-    hash_fn = Keyword.get(opts, :hash_fn, &Sketch.Hash.hash32/1)
+    hash_fn = Keyword.get(opts, :hash_fn, &Approx.Hash.hash32/1)
 
     table = build_table(width, depth)
 
@@ -119,7 +119,7 @@ defmodule Sketch.CountMinSketch do
   # ---------------------------------------------------------------------------
 
   @doc """
-  Adds `amount` occurrences of `element` to the sketch.
+  Adds `amount` occurrences of `element` to the approx.
 
   The `amount` must be a positive integer (negative amounts are not
   supported because they would violate the "never undercount" guarantee).
@@ -132,7 +132,7 @@ defmodule Sketch.CountMinSketch do
 
   ## Returns
 
-    An updated `%Sketch.CountMinSketch{}` struct.
+    An updated `%Approx.CountMinSketch{}` struct.
 
   ## Raises
 
@@ -140,14 +140,14 @@ defmodule Sketch.CountMinSketch do
 
   ## Examples
 
-      iex> cms = Sketch.CountMinSketch.new()
-      iex> cms = Sketch.CountMinSketch.add(cms, "apple")
-      iex> Sketch.CountMinSketch.count(cms, "apple") >= 1
+      iex> cms = Approx.CountMinSketch.new()
+      iex> cms = Approx.CountMinSketch.add(cms, "apple")
+      iex> Approx.CountMinSketch.count(cms, "apple") >= 1
       true
 
-      iex> cms = Sketch.CountMinSketch.new()
-      iex> cms = Sketch.CountMinSketch.add(cms, "banana", 10)
-      iex> Sketch.CountMinSketch.count(cms, "banana") >= 10
+      iex> cms = Approx.CountMinSketch.new()
+      iex> cms = Approx.CountMinSketch.add(cms, "banana", 10)
+      iex> Approx.CountMinSketch.count(cms, "banana") >= 10
       true
   """
   @spec add(t(), term(), pos_integer()) :: t()
@@ -211,7 +211,7 @@ defmodule Sketch.CountMinSketch do
   @doc """
   Returns the estimated count for `element`.
 
-  The returned value is the **minimum** across all rows in the sketch,
+  The returned value is the **minimum** across all rows in the approx,
   which is guaranteed to be >= the true count. In the worst case, the
   overestimate is bounded by `epsilon * N` with probability `1 - delta`.
 
@@ -226,13 +226,13 @@ defmodule Sketch.CountMinSketch do
 
   ## Examples
 
-      iex> cms = Sketch.CountMinSketch.new()
-      iex> cms = cms |> Sketch.CountMinSketch.add("x", 3) |> Sketch.CountMinSketch.add("y", 7)
-      iex> Sketch.CountMinSketch.count(cms, "x") >= 3
+      iex> cms = Approx.CountMinSketch.new()
+      iex> cms = cms |> Approx.CountMinSketch.add("x", 3) |> Approx.CountMinSketch.add("y", 7)
+      iex> Approx.CountMinSketch.count(cms, "x") >= 3
       true
 
-      iex> cms = Sketch.CountMinSketch.new()
-      iex> Sketch.CountMinSketch.count(cms, "never_added")
+      iex> cms = Approx.CountMinSketch.new()
+      iex> Approx.CountMinSketch.count(cms, "never_added")
       0
   """
   @spec count(t(), term()) :: non_neg_integer()
@@ -263,9 +263,9 @@ defmodule Sketch.CountMinSketch do
   @doc """
   Merges two Count-Min Sketches by element-wise addition of counters.
 
-  Both sketches must have the same `width` and `depth`. The resulting
-  sketch contains counts equivalent to having inserted all elements from
-  both source sketches.
+  Both approxes must have the same `width` and `depth`. The resulting
+  approx contains counts equivalent to having inserted all elements from
+  both source approxes.
 
   ## Parameters
 
@@ -274,14 +274,14 @@ defmodule Sketch.CountMinSketch do
 
   ## Returns
 
-    `{:ok, merged}` on success, or `{:error, :dimension_mismatch}` if the sketches have different `width` or `depth`.
+    `{:ok, merged}` on success, or `{:error, :dimension_mismatch}` if the approxes have different `width` or `depth`.
 
   ## Examples
 
-      iex> cms1 = Sketch.CountMinSketch.new() |> Sketch.CountMinSketch.add("a", 3)
-      iex> cms2 = Sketch.CountMinSketch.new() |> Sketch.CountMinSketch.add("a", 7)
-      iex> {:ok, merged} = Sketch.CountMinSketch.merge(cms1, cms2)
-      iex> Sketch.CountMinSketch.count(merged, "a") >= 10
+      iex> cms1 = Approx.CountMinSketch.new() |> Approx.CountMinSketch.add("a", 3)
+      iex> cms2 = Approx.CountMinSketch.new() |> Approx.CountMinSketch.add("a", 7)
+      iex> {:ok, merged} = Approx.CountMinSketch.merge(cms1, cms2)
+      iex> Approx.CountMinSketch.count(merged, "a") >= 10
       true
   """
   @spec merge(t(), t()) :: {:ok, t()} | {:error, :dimension_mismatch}
@@ -312,7 +312,7 @@ defmodule Sketch.CountMinSketch do
   # ---------------------------------------------------------------------------
 
   @doc """
-  Serializes the sketch to a binary.
+  Serializes the approx to a binary.
 
   The binary format is:
 
@@ -332,9 +332,9 @@ defmodule Sketch.CountMinSketch do
 
   ## Examples
 
-      iex> cms = Sketch.CountMinSketch.new(0.1, 0.1) |> Sketch.CountMinSketch.add("test", 5)
-      iex> {:ok, restored} = cms |> Sketch.CountMinSketch.to_binary() |> Sketch.CountMinSketch.from_binary()
-      iex> Sketch.CountMinSketch.count(restored, "test") >= 5
+      iex> cms = Approx.CountMinSketch.new(0.1, 0.1) |> Approx.CountMinSketch.add("test", 5)
+      iex> {:ok, restored} = cms |> Approx.CountMinSketch.to_binary() |> Approx.CountMinSketch.from_binary()
+      iex> Approx.CountMinSketch.count(restored, "test") >= 5
       true
   """
   @spec to_binary(t()) :: binary()
@@ -351,9 +351,9 @@ defmodule Sketch.CountMinSketch do
   end
 
   @doc """
-  Deserializes a sketch from the binary format produced by `to_binary/1`.
+  Deserializes a approx from the binary format produced by `to_binary/1`.
 
-  The deserialized sketch uses the default hash function
+  The deserialized approx uses the default hash function
   (built-in 32-bit hash).
 
   ## Parameters
@@ -362,18 +362,18 @@ defmodule Sketch.CountMinSketch do
 
   ## Returns
 
-    `{:ok, sketch}` on success, or `{:error, :invalid_binary}` if the binary is malformed or uses an unsupported version.
+    `{:ok, approx}` on success, or `{:error, :invalid_binary}` if the binary is malformed or uses an unsupported version.
 
   ## Options
 
-    * `:hash_fn` -- override the hash function on the restored sketch.
+    * `:hash_fn` -- override the hash function on the restored approx.
       Defaults to the built-in 32-bit hash.
 
   ## Examples
 
-      iex> cms = Sketch.CountMinSketch.new(0.1, 0.1) |> Sketch.CountMinSketch.add("x", 42)
-      iex> {:ok, restored} = cms |> Sketch.CountMinSketch.to_binary() |> Sketch.CountMinSketch.from_binary()
-      iex> Sketch.CountMinSketch.count(restored, "x") == Sketch.CountMinSketch.count(cms, "x")
+      iex> cms = Approx.CountMinSketch.new(0.1, 0.1) |> Approx.CountMinSketch.add("x", 42)
+      iex> {:ok, restored} = cms |> Approx.CountMinSketch.to_binary() |> Approx.CountMinSketch.from_binary()
+      iex> Approx.CountMinSketch.count(restored, "x") == Approx.CountMinSketch.count(cms, "x")
       true
   """
   @spec from_binary(binary(), keyword()) :: {:ok, t()} | {:error, :invalid_binary}
@@ -390,7 +390,7 @@ defmodule Sketch.CountMinSketch do
     if byte_size(rest) != expected_bytes do
       {:error, :invalid_binary}
     else
-      hash_fn = Keyword.get(opts, :hash_fn, &Sketch.Hash.hash32/1)
+      hash_fn = Keyword.get(opts, :hash_fn, &Approx.Hash.hash32/1)
       table = decode_counters(rest, width, depth)
 
       {:ok,
@@ -434,12 +434,12 @@ defmodule Sketch.CountMinSketch do
   # even when width > 65536.
   defp hash_pair(hash_fn, element) do
     h1 = hash_fn.(element)
-    h2 = hash_fn.({:__sketch_h2__, element})
+    h2 = hash_fn.({:__approx_h2__, element})
     {h1, h2}
   end
 
   defp column_for(h1, h2, i, width) do
-    Sketch.Hash.double_hash(h1, h2, i) |> rem(width) |> abs()
+    Approx.Hash.double_hash(h1, h2, i) |> rem(width) |> abs()
   end
 
   defp decode_counters(binary, width, depth) do

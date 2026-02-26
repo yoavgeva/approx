@@ -1,7 +1,7 @@
-defmodule Sketch.CountMinSketchTest do
+defmodule Approx.CountMinSketchTest do
   use ExUnit.Case, async: true
 
-  alias Sketch.CountMinSketch
+  alias Approx.CountMinSketch
 
   doctest CountMinSketch
 
@@ -10,7 +10,7 @@ defmodule Sketch.CountMinSketchTest do
   # ---------------------------------------------------------------------------
 
   describe "new/3" do
-    test "creates a sketch with default parameters" do
+    test "creates a approx with default parameters" do
       cms = CountMinSketch.new()
 
       # width = ceil(e / 0.001) = ceil(2718.28...) = 2719
@@ -20,7 +20,7 @@ defmodule Sketch.CountMinSketchTest do
       assert is_function(cms.hash_fn, 1)
     end
 
-    test "creates a sketch with custom epsilon and delta" do
+    test "creates a approx with custom epsilon and delta" do
       cms = CountMinSketch.new(0.01, 0.05)
 
       # width = ceil(e / 0.01) = ceil(271.828...) = 272
@@ -144,18 +144,18 @@ defmodule Sketch.CountMinSketchTest do
   # ---------------------------------------------------------------------------
 
   describe "count/2" do
-    test "returns 0 for element never added (empty sketch)" do
+    test "returns 0 for element never added (empty approx)" do
       cms = CountMinSketch.new()
       assert CountMinSketch.count(cms, "ghost") == 0
     end
 
-    test "returns 0 for element not added to non-empty sketch" do
+    test "returns 0 for element not added to non-empty approx" do
       cms =
         CountMinSketch.new()
         |> CountMinSketch.add("present", 100)
 
       # This might be 0 or a small overestimate due to hash collisions;
-      # but for a single element in a large sketch it should be 0.
+      # but for a single element in a large approx it should be 0.
       assert CountMinSketch.count(cms, "absent") >= 0
     end
 
@@ -212,7 +212,7 @@ defmodule Sketch.CountMinSketchTest do
   # ---------------------------------------------------------------------------
 
   describe "merge/2" do
-    test "merged sketch has counts equal to sum of individual sketches" do
+    test "merged approx has counts equal to sum of individual approxes" do
       epsilon = 0.001
       delta = 0.01
 
@@ -229,7 +229,7 @@ defmodule Sketch.CountMinSketchTest do
           CountMinSketch.add(acc, elem, freq)
         end)
 
-      # Build a combined sketch from scratch for comparison
+      # Build a combined approx from scratch for comparison
       cms_combined =
         Enum.reduce(data1 ++ data2, CountMinSketch.new(epsilon, delta), fn {elem, freq}, acc ->
           CountMinSketch.add(acc, elem, freq)
@@ -237,7 +237,7 @@ defmodule Sketch.CountMinSketchTest do
 
       {:ok, merged} = CountMinSketch.merge(cms1, cms2)
 
-      # The merged sketch should give the same counts as the combined one
+      # The merged approx should give the same counts as the combined one
       all_items = Enum.uniq(Enum.map(data1, &elem(&1, 0)) ++ Enum.map(data2, &elem(&1, 0)))
 
       for item <- all_items do
@@ -246,7 +246,7 @@ defmodule Sketch.CountMinSketchTest do
       end
     end
 
-    test "merge with empty sketch returns equivalent of original" do
+    test "merge with empty approx returns equivalent of original" do
       cms =
         CountMinSketch.new(0.01, 0.01)
         |> CountMinSketch.add("a", 5)
@@ -324,7 +324,7 @@ defmodule Sketch.CountMinSketchTest do
       assert CountMinSketch.count(restored, "y") == CountMinSketch.count(cms, "y")
     end
 
-    test "round-trip of empty sketch" do
+    test "round-trip of empty approx" do
       cms = CountMinSketch.new(0.01, 0.01)
 
       {:ok, restored} = cms |> CountMinSketch.to_binary() |> CountMinSketch.from_binary()
@@ -463,7 +463,7 @@ defmodule Sketch.CountMinSketchTest do
           Map.update(acc, key, freq, &(&1 + freq))
         end)
 
-      # Build the sketch
+      # Build the approx
       cms =
         Enum.reduce(elements, CountMinSketch.new(0.001, 0.01), fn {key, freq}, acc ->
           CountMinSketch.add(acc, key, freq)
@@ -575,7 +575,7 @@ defmodule Sketch.CountMinSketchTest do
       epsilon = 0.01
       delta = 0.01
 
-      # Create three sketches with distinct data
+      # Create three approxes with distinct data
       cms_a =
         Enum.reduce(1..100, CountMinSketch.new(epsilon, delta), fn i, acc ->
           CountMinSketch.add(acc, "a_#{i}", i)
@@ -599,7 +599,7 @@ defmodule Sketch.CountMinSketchTest do
       {:ok, bc} = CountMinSketch.merge(cms_b, cms_c)
       {:ok, a_bc} = CountMinSketch.merge(cms_a, bc)
 
-      # Verify identical counts for elements from all three sketches
+      # Verify identical counts for elements from all three approxes
       test_elements =
         for prefix <- ["a_", "b_", "c_"],
             i <- [1, 25, 50, 75, 100] do
@@ -619,11 +619,11 @@ defmodule Sketch.CountMinSketchTest do
   # ---------------------------------------------------------------------------
 
   describe "accuracy after serialization" do
-    test "deserialized sketch preserves accuracy for a large workload" do
+    test "deserialized approx preserves accuracy for a large workload" do
       epsilon = 0.001
       delta = 0.01
 
-      # Build a sketch with 5000 elements with varying frequencies
+      # Build a approx with 5000 elements with varying frequencies
       true_freq =
         for i <- 1..5000, into: %{} do
           freq = rem(i * 7, 100) + 1
@@ -640,7 +640,7 @@ defmodule Sketch.CountMinSketchTest do
       # Serialize and deserialize
       {:ok, restored} = cms |> CountMinSketch.to_binary() |> CountMinSketch.from_binary()
 
-      # Verify accuracy on the restored sketch: counts >= true counts
+      # Verify accuracy on the restored approx: counts >= true counts
       sample_keys = Enum.take_every(Map.keys(true_freq), 10)
 
       for elem <- sample_keys do
@@ -671,7 +671,7 @@ defmodule Sketch.CountMinSketchTest do
   # ---------------------------------------------------------------------------
 
   describe "merge with self" do
-    test "merging a sketch with itself exactly doubles all counts" do
+    test "merging a approx with itself exactly doubles all counts" do
       cms =
         CountMinSketch.new(0.01, 0.01)
         |> CountMinSketch.add("alpha", 3)
@@ -701,11 +701,11 @@ defmodule Sketch.CountMinSketchTest do
   describe "exact counts" do
     test "single element with custom hash produces exact count" do
       # Use a hash function that produces distinct values for different elements.
-      # The hash function must also handle the {:__sketch_h2__, element} tuple
+      # The hash function must also handle the {:__approx_h2__, element} tuple
       # used for the second independent hash in double hashing.
       deterministic_hash = fn
         "only_element" -> 0x0001_0002
-        {:__sketch_h2__, "only_element"} -> 0x0003_0004
+        {:__approx_h2__, "only_element"} -> 0x0003_0004
         other -> :erlang.phash2(other, Bitwise.bsl(1, 32))
       end
 
@@ -721,14 +721,14 @@ defmodule Sketch.CountMinSketchTest do
     test "multiple elements with distinct hashes produce exact counts" do
       # Craft a hash function that maps each test element to a unique value
       # producing non-overlapping column indices across all rows.
-      # Must also handle {:__sketch_h2__, element} tuples for the second hash.
+      # Must also handle {:__approx_h2__, element} tuples for the second hash.
       deterministic_hash = fn
         "elem_a" -> 0x0010_0001
         "elem_b" -> 0x0020_0002
         "elem_c" -> 0x0030_0003
-        {:__sketch_h2__, "elem_a"} -> 0x0040_0004
-        {:__sketch_h2__, "elem_b"} -> 0x0050_0005
-        {:__sketch_h2__, "elem_c"} -> 0x0060_0006
+        {:__approx_h2__, "elem_a"} -> 0x0040_0004
+        {:__approx_h2__, "elem_b"} -> 0x0050_0005
+        {:__approx_h2__, "elem_c"} -> 0x0060_0006
         other -> :erlang.phash2(other, Bitwise.bsl(1, 32))
       end
 
@@ -749,7 +749,7 @@ defmodule Sketch.CountMinSketchTest do
   # ---------------------------------------------------------------------------
 
   describe "extreme parameters" do
-    test "very small epsilon creates a wide sketch without crash" do
+    test "very small epsilon creates a wide approx without crash" do
       cms = CountMinSketch.new(0.0001, 0.01)
 
       # width = ceil(e / 0.0001) = ceil(27182.8...) = 27183
@@ -761,7 +761,7 @@ defmodule Sketch.CountMinSketchTest do
       assert CountMinSketch.count(cms, "test") >= 10
     end
 
-    test "very small delta creates a deep sketch without crash" do
+    test "very small delta creates a deep approx without crash" do
       cms = CountMinSketch.new(0.01, 0.0001)
 
       assert cms.width == 272
@@ -872,16 +872,16 @@ defmodule Sketch.CountMinSketchTest do
   end
 
   # ---------------------------------------------------------------------------
-  # Multi-sketch merge
+  # Multi-approx merge
   # ---------------------------------------------------------------------------
 
-  describe "multi-sketch merge" do
-    test "reduce-merge over 10 sketches matches single combined sketch" do
+  describe "multi-approx merge" do
+    test "reduce-merge over 10 approxes matches single combined approx" do
       epsilon = 0.001
       delta = 0.01
 
-      # Build 10 sketches with disjoint data
-      sketches =
+      # Build 10 approxes with disjoint data
+      approxes =
         for batch <- 0..9 do
           start = batch * 100 + 1
           stop = (batch + 1) * 100
@@ -891,22 +891,22 @@ defmodule Sketch.CountMinSketchTest do
           end)
         end
 
-      # Reduce-merge all 10 sketches
-      [first | rest] = sketches
+      # Reduce-merge all 10 approxes
+      [first | rest] = approxes
 
       merged =
-        Enum.reduce(rest, first, fn sketch, acc ->
-          {:ok, result} = CountMinSketch.merge(acc, sketch)
+        Enum.reduce(rest, first, fn approx, acc ->
+          {:ok, result} = CountMinSketch.merge(acc, approx)
           result
         end)
 
-      # Build a single sketch from all combined data for comparison
+      # Build a single approx from all combined data for comparison
       combined =
         Enum.reduce(1..1000, CountMinSketch.new(epsilon, delta), fn i, acc ->
           CountMinSketch.add(acc, "multi_#{i}", rem(i, 50) + 1)
         end)
 
-      # All counts from the reduced merge should match the combined sketch exactly
+      # All counts from the reduced merge should match the combined approx exactly
       # (merge is element-wise addition, same as building from scratch)
       sample = Enum.take_every(1..1000, 7)
 
@@ -933,12 +933,12 @@ defmodule Sketch.CountMinSketchTest do
   describe "bug fix regressions" do
     # --- Bug 1: 16-bit hash halves -----------------------------------------------
     # The fix uses two independent 32-bit hashes instead of splitting one hash
-    # into two 16-bit halves. Sketches wider than 65,536 now work correctly.
+    # into two 16-bit halves. Approxes wider than 65,536 now work correctly.
 
-    test "wide sketch (width > 65,536) returns correct counts" do
+    test "wide approx (width > 65,536) returns correct counts" do
       # epsilon = 0.0001 produces width = ceil(e / 0.0001) = 27,183
       # This does not exceed 65,536 on its own, but we use a very small epsilon
-      # to get a wide sketch that would suffer from hash collisions with the old
+      # to get a wide approx that would suffer from hash collisions with the old
       # 16-bit split. For a width > 65,536 we'd need epsilon < e/65536 ~ 0.0000416.
       cms = CountMinSketch.new(0.00001, 0.01)
       assert cms.width > 65_536, "width should exceed 65,536 for this test"
@@ -956,22 +956,22 @@ defmodule Sketch.CountMinSketchTest do
         actual = CountMinSketch.count(cms, elem)
 
         assert actual >= freq,
-               "Undercount in wide sketch for #{elem}: actual=#{actual}, expected>=#{freq}"
+               "Undercount in wide approx for #{elem}: actual=#{actual}, expected>=#{freq}"
       end
 
-      # With only 200 elements in a >65K wide sketch, counts should be exact
+      # With only 200 elements in a >65K wide approx, counts should be exact
       # (virtually no collisions). The old 16-bit split would cause collisions
       # by mapping all positions into a 65K range.
       for {elem, freq} <- elements do
         actual = CountMinSketch.count(cms, elem)
 
         assert actual == freq,
-               "Overcount in wide sketch for #{elem}: actual=#{actual}, expected=#{freq}. " <>
+               "Overcount in wide approx for #{elem}: actual=#{actual}, expected=#{freq}. " <>
                  "This may indicate hash position collisions from 16-bit truncation."
       end
     end
 
-    test "hash_fn receives {:__sketch_h2__, element} for the second hash" do
+    test "hash_fn receives {:__approx_h2__, element} for the second hash" do
       parent = self()
 
       tracking_hash = fn term ->
@@ -991,11 +991,11 @@ defmodule Sketch.CountMinSketchTest do
       assert {:hash_call, "tracked_elem"} in calls,
              "hash_fn should be called with the raw element"
 
-      assert {:hash_call, {:__sketch_h2__, "tracked_elem"}} in calls,
-             "hash_fn should be called with {:__sketch_h2__, element} for the second hash"
+      assert {:hash_call, {:__approx_h2__, "tracked_elem"}} in calls,
+             "hash_fn should be called with {:__approx_h2__, element} for the second hash"
     end
 
-    test "wide sketch element counts don't collide more than expected" do
+    test "wide approx element counts don't collide more than expected" do
       # With epsilon = 0.0001, width = 27,183 and depth = 5.
       # Insert 5000 elements each with count 1. Total count N = 5000.
       # The overestimate bound is epsilon * N = 0.0001 * 5000 = 0.5, so
@@ -1032,7 +1032,7 @@ defmodule Sketch.CountMinSketchTest do
                "Possible regression to 16-bit hash splitting causing excess collisions."
     end
 
-    test "add and count on sketch with width just above 65,536 returns exact counts for single element" do
+    test "add and count on approx with width just above 65,536 returns exact counts for single element" do
       # Use an epsilon that produces width just above 65,536 to test the boundary.
       # width = ceil(e / epsilon) > 65_536  =>  epsilon < e / 65_536 ~ 0.0000416
       cms = CountMinSketch.new(0.00004, 0.01)
@@ -1040,9 +1040,9 @@ defmodule Sketch.CountMinSketchTest do
 
       cms = CountMinSketch.add(cms, "boundary_elem", 42)
 
-      # With a single element in a very wide sketch, the count must be exact.
+      # With a single element in a very wide approx, the count must be exact.
       assert CountMinSketch.count(cms, "boundary_elem") == 42,
-             "Single element count should be exact in a >65K wide sketch"
+             "Single element count should be exact in a >65K wide approx"
     end
   end
 
@@ -1051,15 +1051,15 @@ defmodule Sketch.CountMinSketchTest do
   # ---------------------------------------------------------------------------
 
   describe "bug verification (fixed)" do
-    test "count of absent element in non-empty sketch is exactly 0" do
+    test "count of absent element in non-empty approx is exactly 0" do
       # Previously the test asserted `>= 0` which was tautologically true.
-      # With only one element in a large sketch, an absent element should have count 0.
+      # With only one element in a large approx, an absent element should have count 0.
       cms = CountMinSketch.new() |> CountMinSketch.add("present", 100)
 
       # With default params (width=2719, depth=5), a single element should not
       # cause any collision for a random absent element
       count = CountMinSketch.count(cms, "definitely_absent_element_xyz")
-      assert count == 0, "Expected exactly 0 for absent element in sparse sketch, got #{count}"
+      assert count == 0, "Expected exactly 0 for absent element in sparse approx, got #{count}"
     end
   end
 

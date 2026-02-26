@@ -1,11 +1,11 @@
-defmodule Sketch.CuckooFilterTest do
+defmodule Approx.CuckooFilterTest do
   use ExUnit.Case, async: true
 
   import Bitwise
 
-  alias Sketch.CuckooFilter
+  alias Approx.CuckooFilter
 
-  doctest Sketch.CuckooFilter
+  doctest Approx.CuckooFilter
 
   @max_32 bsl(1, 32)
 

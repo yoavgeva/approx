@@ -1,4 +1,4 @@
-defmodule Sketch.BloomFilter do
+defmodule Approx.BloomFilter do
   @moduledoc """
   A Bloom filter — a space-efficient probabilistic set membership structure.
 
@@ -18,15 +18,15 @@ defmodule Sketch.BloomFilter do
   Create a filter by specifying the expected number of elements (capacity) and
   the desired false positive probability:
 
-      bf = Sketch.BloomFilter.new(1_000)              # 1 % FPP (default)
-      bf = Sketch.BloomFilter.new(1_000, 0.001)       # 0.1 % FPP
+      bf = Approx.BloomFilter.new(1_000)              # 1 % FPP (default)
+      bf = Approx.BloomFilter.new(1_000, 0.001)       # 0.1 % FPP
 
   ## Adding elements and querying
 
-      bf = Sketch.BloomFilter.new(100)
-      bf = Sketch.BloomFilter.add(bf, "hello")
-      Sketch.BloomFilter.member?(bf, "hello")   # => true
-      Sketch.BloomFilter.member?(bf, "world")   # => false (probably)
+      bf = Approx.BloomFilter.new(100)
+      bf = Approx.BloomFilter.add(bf, "hello")
+      Approx.BloomFilter.member?(bf, "hello")   # => true
+      Approx.BloomFilter.member?(bf, "world")   # => false (probably)
 
   ## Merging filters
 
@@ -34,15 +34,15 @@ defmodule Sketch.BloomFilter do
   This is useful in distributed or parallel pipelines where each node builds
   its own filter and you combine them afterwards:
 
-      merged = Sketch.BloomFilter.merge(bf1, bf2)
+      merged = Approx.BloomFilter.merge(bf1, bf2)
 
   ## Serialization
 
   Filters can be serialized to and from binaries for storage or network
   transfer:
 
-      bin = Sketch.BloomFilter.to_binary(bf)
-      {:ok, bf} = Sketch.BloomFilter.from_binary(bin)
+      bin = Approx.BloomFilter.to_binary(bf)
+      {:ok, bf} = Approx.BloomFilter.from_binary(bin)
 
   The wire format is:
 
@@ -97,7 +97,7 @@ defmodule Sketch.BloomFilter do
 
   ## Returns
 
-    A `%Sketch.BloomFilter{}` struct.
+    A `%Approx.BloomFilter{}` struct.
 
   ## Raises
 
@@ -106,12 +106,12 @@ defmodule Sketch.BloomFilter do
 
   ## Examples
 
-      iex> bf = Sketch.BloomFilter.new(100)
-      iex> bf = Sketch.BloomFilter.add(bf, "hello")
-      iex> Sketch.BloomFilter.member?(bf, "hello")
+      iex> bf = Approx.BloomFilter.new(100)
+      iex> bf = Approx.BloomFilter.add(bf, "hello")
+      iex> Approx.BloomFilter.member?(bf, "hello")
       true
 
-      iex> bf = Sketch.BloomFilter.new(1_000, 0.001)
+      iex> bf = Approx.BloomFilter.new(1_000, 0.001)
       iex> bf.hash_count > 0 and bf.size > 0
       true
   """
@@ -125,7 +125,7 @@ defmodule Sketch.BloomFilter do
              false_positive_probability < 1.0 do
     m = optimal_bit_count(capacity, false_positive_probability)
     k = optimal_hash_count(m, capacity)
-    hash_fn = Keyword.get(opts, :hash_fn, &Sketch.Hash.hash32/1)
+    hash_fn = Keyword.get(opts, :hash_fn, &Approx.Hash.hash32/1)
     byte_count = div(m + 7, 8)
 
     %__MODULE__{
@@ -147,13 +147,13 @@ defmodule Sketch.BloomFilter do
 
   ## Returns
 
-    An updated `%Sketch.BloomFilter{}` struct.
+    An updated `%Approx.BloomFilter{}` struct.
 
   ## Examples
 
-      iex> bf = Sketch.BloomFilter.new(100)
-      iex> bf = Sketch.BloomFilter.add(bf, "hello")
-      iex> Sketch.BloomFilter.member?(bf, "hello")
+      iex> bf = Approx.BloomFilter.new(100)
+      iex> bf = Approx.BloomFilter.add(bf, "hello")
+      iex> Approx.BloomFilter.member?(bf, "hello")
       true
   """
   @spec add(t(), term()) :: t()
@@ -161,7 +161,7 @@ defmodule Sketch.BloomFilter do
     # Compute h1 and h2 once, then build a map of byte_index => accumulated OR mask.
     # This fuses hash_positions (Issue 2) and avoids per-bit binary rebuilds (Issue 1).
     h1 = hash_fn.(element)
-    h2 = hash_fn.({:__sketch_h2__, element})
+    h2 = hash_fn.({:__approx_h2__, element})
 
     mask_map = build_mask_map(h1, h2, k, m, 0, %{})
 
@@ -189,12 +189,12 @@ defmodule Sketch.BloomFilter do
 
   ## Examples
 
-      iex> bf = Sketch.BloomFilter.new(100)
-      iex> Sketch.BloomFilter.member?(bf, "ghost")
+      iex> bf = Approx.BloomFilter.new(100)
+      iex> Approx.BloomFilter.member?(bf, "ghost")
       false
 
-      iex> bf = Sketch.BloomFilter.new(100) |> Sketch.BloomFilter.add("present")
-      iex> Sketch.BloomFilter.member?(bf, "present")
+      iex> bf = Approx.BloomFilter.new(100) |> Approx.BloomFilter.add("present")
+      iex> Approx.BloomFilter.member?(bf, "present")
       true
   """
   @spec member?(t(), term()) :: boolean()
@@ -203,7 +203,7 @@ defmodule Sketch.BloomFilter do
     # immediately when an unset bit is found, avoiding intermediate list
     # allocation (Issue 3).
     h1 = hash_fn.(element)
-    h2 = hash_fn.({:__sketch_h2__, element})
+    h2 = hash_fn.({:__approx_h2__, element})
     check_bits(bits, h1, h2, m, k, 0)
   end
 
@@ -224,10 +224,10 @@ defmodule Sketch.BloomFilter do
 
   ## Examples
 
-      iex> bf1 = Sketch.BloomFilter.new(100) |> Sketch.BloomFilter.add("a")
-      iex> bf2 = Sketch.BloomFilter.new(100) |> Sketch.BloomFilter.add("b")
-      iex> {:ok, merged} = Sketch.BloomFilter.merge(bf1, bf2)
-      iex> Sketch.BloomFilter.member?(merged, "a") and Sketch.BloomFilter.member?(merged, "b")
+      iex> bf1 = Approx.BloomFilter.new(100) |> Approx.BloomFilter.add("a")
+      iex> bf2 = Approx.BloomFilter.new(100) |> Approx.BloomFilter.add("b")
+      iex> {:ok, merged} = Approx.BloomFilter.merge(bf1, bf2)
+      iex> Approx.BloomFilter.member?(merged, "a") and Approx.BloomFilter.member?(merged, "b")
       true
   """
   @spec merge(t(), t()) :: {:ok, t()} | {:error, :incompatible_filters}
@@ -252,10 +252,10 @@ defmodule Sketch.BloomFilter do
 
   ## Examples
 
-      iex> bf1 = Sketch.BloomFilter.new(100) |> Sketch.BloomFilter.add("x")
-      iex> bf2 = Sketch.BloomFilter.new(100) |> Sketch.BloomFilter.add("y")
-      iex> {:ok, merged} = Sketch.BloomFilter.union(bf1, bf2)
-      iex> Sketch.BloomFilter.member?(merged, "x")
+      iex> bf1 = Approx.BloomFilter.new(100) |> Approx.BloomFilter.add("x")
+      iex> bf2 = Approx.BloomFilter.new(100) |> Approx.BloomFilter.add("y")
+      iex> {:ok, merged} = Approx.BloomFilter.union(bf1, bf2)
+      iex> Approx.BloomFilter.member?(merged, "x")
       true
   """
   @spec union(t(), t()) :: {:ok, t()} | {:error, :incompatible_filters}
@@ -282,9 +282,9 @@ defmodule Sketch.BloomFilter do
 
   ## Examples
 
-      iex> bf = Sketch.BloomFilter.new(100) |> Sketch.BloomFilter.add("test")
-      iex> {:ok, restored} = bf |> Sketch.BloomFilter.to_binary() |> Sketch.BloomFilter.from_binary()
-      iex> Sketch.BloomFilter.member?(restored, "test")
+      iex> bf = Approx.BloomFilter.new(100) |> Approx.BloomFilter.add("test")
+      iex> {:ok, restored} = bf |> Approx.BloomFilter.to_binary() |> Approx.BloomFilter.from_binary()
+      iex> Approx.BloomFilter.member?(restored, "test")
       true
   """
   @spec to_binary(t()) :: binary()
@@ -312,9 +312,9 @@ defmodule Sketch.BloomFilter do
 
   ## Examples
 
-      iex> bf = Sketch.BloomFilter.new(100) |> Sketch.BloomFilter.add("round_trip")
-      iex> {:ok, restored} = bf |> Sketch.BloomFilter.to_binary() |> Sketch.BloomFilter.from_binary()
-      iex> Sketch.BloomFilter.member?(restored, "round_trip")
+      iex> bf = Approx.BloomFilter.new(100) |> Approx.BloomFilter.add("round_trip")
+      iex> {:ok, restored} = bf |> Approx.BloomFilter.to_binary() |> Approx.BloomFilter.from_binary()
+      iex> Approx.BloomFilter.member?(restored, "round_trip")
       true
   """
   @spec from_binary(binary(), keyword()) :: {:ok, t()} | {:error, :invalid_binary}
@@ -329,7 +329,7 @@ defmodule Sketch.BloomFilter do
     expected_bytes = div(size + 7, 8)
 
     if byte_size(bits) == expected_bytes do
-      hash_fn = Keyword.get(opts, :hash_fn, &Sketch.Hash.hash32/1)
+      hash_fn = Keyword.get(opts, :hash_fn, &Approx.Hash.hash32/1)
 
       {:ok,
        %__MODULE__{
@@ -377,7 +377,7 @@ defmodule Sketch.BloomFilter do
   defp build_mask_map(_h1, _h2, k, _m, i, acc) when i == k, do: acc
 
   defp build_mask_map(h1, h2, k, m, i, acc) do
-    pos = Sketch.Hash.double_hash(h1, h2, i) |> rem(m) |> abs()
+    pos = Approx.Hash.double_hash(h1, h2, i) |> rem(m) |> abs()
     byte_index = div(pos, 8)
     bit_mask = bsl(1, rem(pos, 8))
     updated = Map.update(acc, byte_index, bit_mask, &bor(&1, bit_mask))
@@ -438,7 +438,7 @@ defmodule Sketch.BloomFilter do
   defp check_bits(_bits, _h1, _h2, _m, k, i) when i == k, do: true
 
   defp check_bits(bits, h1, h2, m, k, i) do
-    pos = Sketch.Hash.double_hash(h1, h2, i) |> rem(m) |> abs()
+    pos = Approx.Hash.double_hash(h1, h2, i) |> rem(m) |> abs()
     byte_index = div(pos, 8)
     bit_offset = rem(pos, 8)
     byte = :binary.at(bits, byte_index)
