@@ -68,7 +68,20 @@ defmodule Sketch.HyperLogLog do
   @enforce_keys [:registers, :precision, :hash_fn]
   defstruct [:registers, :precision, :hash_fn]
 
-  @typedoc "A HyperLogLog cardinality estimator struct."
+  @typedoc """
+  A HyperLogLog cardinality estimator struct.
+
+  Fields:
+
+    * `:registers` — A tuple of `2^precision` register values (non-negative
+      integers). Each register stores the maximum observed leading-zeros-plus-one
+      value for its hash bucket.
+    * `:precision` — An integer from `4` to `16` controlling the number of
+      registers and thus the trade-off between memory usage and estimation
+      accuracy.
+    * `:hash_fn` — A function `(term() -> non_neg_integer())` used to hash
+      elements into 32-bit values.
+  """
   @type t :: %__MODULE__{
           registers: tuple(),
           precision: 4..16,
@@ -92,7 +105,15 @@ defmodule Sketch.HyperLogLog do
       is `2^precision`.
     * `opts` — A keyword list of options:
       * `:hash_fn` — A function `(term() -> non_neg_integer())` that returns a
-        32-bit hash. Defaults to `&Sketch.Hash.hash32/1`.
+        32-bit hash. Defaults to the built-in 32-bit hash.
+
+  ## Returns
+
+  A new `%Sketch.HyperLogLog{}` struct with all registers initialized to zero.
+
+  ## Raises
+
+    * `ArgumentError` if `precision` is an integer outside `4..16`.
 
   ## Examples
 
@@ -308,12 +329,16 @@ defmodule Sketch.HyperLogLog do
   @doc """
   Deserializes a HyperLogLog estimator from a binary.
 
-  Restores a HyperLogLog struct previously serialized with `to_binary/1`. The
-  hash function is reset to the default `&Sketch.Hash.hash32/1`.
+  Restores a HyperLogLog struct previously serialized with `to_binary/1`. By
+  default the hash function is reset to the built-in 32-bit hash; pass the
+  `:hash_fn` option to override.
 
   ## Parameters
 
     * `binary` — A binary produced by `to_binary/1`.
+    * `opts` — A keyword list of options:
+      * `:hash_fn` — A function `(term() -> non_neg_integer())` that returns a
+        32-bit hash. Defaults to the built-in 32-bit hash.
 
   ## Returns
 
@@ -327,8 +352,10 @@ defmodule Sketch.HyperLogLog do
       iex> Sketch.HyperLogLog.count(restored) == Sketch.HyperLogLog.count(hll)
       true
   """
-  @spec from_binary(binary()) :: {:ok, t()} | {:error, :invalid_binary}
-  def from_binary(<<@serialization_version::8, p::8, register_bytes::binary>>)
+  @spec from_binary(binary(), keyword()) :: {:ok, t()} | {:error, :invalid_binary}
+  def from_binary(binary, opts \\ [])
+
+  def from_binary(<<@serialization_version::8, p::8, register_bytes::binary>>, opts)
       when p >= @min_precision and p <= @max_precision do
     m = bsl(1, p)
 
@@ -336,21 +363,22 @@ defmodule Sketch.HyperLogLog do
       {:error, :invalid_binary}
     else
       registers = binary_to_registers(register_bytes, m)
+      hash_fn = Keyword.get(opts, :hash_fn, &Sketch.Hash.hash32/1)
 
       {:ok,
        %__MODULE__{
          registers: registers,
          precision: p,
-         hash_fn: &Sketch.Hash.hash32/1
+         hash_fn: hash_fn
        }}
     end
   end
 
-  def from_binary(<<_version::8, _rest::binary>>) do
+  def from_binary(<<_version::8, _rest::binary>>, _opts) do
     {:error, :invalid_binary}
   end
 
-  def from_binary(_binary) do
+  def from_binary(_binary, _opts) do
     {:error, :invalid_binary}
   end
 

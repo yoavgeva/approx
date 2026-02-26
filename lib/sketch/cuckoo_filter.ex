@@ -62,7 +62,10 @@ defmodule Sketch.CuckooFilter do
   @enforce_keys [:buckets, :num_buckets, :bucket_size, :fingerprint_size, :count, :hash_fn, :seed]
   defstruct [:buckets, :num_buckets, :bucket_size, :fingerprint_size, :count, :hash_fn, :seed]
 
-  @typedoc "A Cuckoo filter struct."
+  @typedoc """
+  A Cuckoo filter struct holding fingerprint buckets, sizing parameters, and
+  the hash function used for insertion, lookup, and deletion.
+  """
   @type t :: %__MODULE__{
           buckets: tuple(),
           num_buckets: pos_integer(),
@@ -94,15 +97,24 @@ defmodule Sketch.CuckooFilter do
       (positive integer).
     * `opts` — keyword list of options:
       * `:hash_fn` — a 1-arity function `(term -> non_neg_integer())`.
-        Defaults to `&Sketch.Hash.hash32/1`.
+        Defaults to the built-in 32-bit hash.
       * `:seed` — an initial seed for `:rand`. Accepts any term accepted
         by `:rand.seed/2` or a pre-existing `:rand.state()`. Defaults to
         `:rand.seed(:exsss)`.
 
+  ## Returns
+
+    * A `t:t/0` struct representing an empty Cuckoo filter.
+
+  ## Raises
+
+    * `FunctionClauseError` if `capacity` is not a positive integer.
+
   ## Examples
 
       iex> cf = Sketch.CuckooFilter.new(100)
-      iex> cf.num_buckets >= 2
+      iex> {:ok, cf} = Sketch.CuckooFilter.insert(cf, "test")
+      iex> Sketch.CuckooFilter.member?(cf, "test")
       true
 
       iex> cf = Sketch.CuckooFilter.new(16)
@@ -151,6 +163,11 @@ defmodule Sketch.CuckooFilter do
     * `cf` — a `%Sketch.CuckooFilter{}` struct.
     * `element` — any Erlang/Elixir term.
 
+  ## Returns
+
+    * `{:ok, t()}` — the updated filter with the element inserted.
+    * `{:error, :full}` — if the filter is at capacity and eviction failed.
+
   ## Examples
 
       iex> cf = Sketch.CuckooFilter.new(100)
@@ -183,6 +200,21 @@ defmodule Sketch.CuckooFilter do
     end
   end
 
+  @doc """
+  Alias for `insert/2`.
+
+  Adds an element to the Cuckoo filter.
+
+  ## Examples
+
+      iex> cf = Sketch.CuckooFilter.new(100)
+      iex> {:ok, cf} = Sketch.CuckooFilter.add(cf, "hello")
+      iex> Sketch.CuckooFilter.member?(cf, "hello")
+      true
+  """
+  @spec add(t(), term()) :: {:ok, t()} | {:error, :full}
+  def add(cf, element), do: insert(cf, element)
+
   # ---------------------------------------------------------------------------
   # Membership query
   # ---------------------------------------------------------------------------
@@ -198,6 +230,11 @@ defmodule Sketch.CuckooFilter do
 
     * `cf` — a `%Sketch.CuckooFilter{}` struct.
     * `element` — any Erlang/Elixir term.
+
+  ## Returns
+
+    * `true` — the element is possibly in the filter (may be a false positive).
+    * `false` — the element is definitely not in the filter.
 
   ## Examples
 
@@ -237,6 +274,11 @@ defmodule Sketch.CuckooFilter do
 
     * `cf` — a `%Sketch.CuckooFilter{}` struct.
     * `element` — any Erlang/Elixir term.
+
+  ## Returns
+
+    * `{:ok, t()}` — the updated filter with one occurrence of the element removed.
+    * `{:error, :not_found}` — if the element's fingerprint was not found.
 
   ## Examples
 
@@ -286,12 +328,16 @@ defmodule Sketch.CuckooFilter do
   slot, 0 for empty). The `hash_fn` and `seed` are **not** serialized; on
   deserialization the defaults are restored.
 
+  ## Returns
+
+    * A binary encoding of the filter's bucket data, element count, and version.
+
   ## Examples
 
       iex> cf = Sketch.CuckooFilter.new(100)
-      iex> {:ok, cf} = Sketch.CuckooFilter.insert(cf, "test")
-      iex> bin = Sketch.CuckooFilter.to_binary(cf)
-      iex> is_binary(bin)
+      iex> {:ok, cf} = Sketch.CuckooFilter.insert(cf, "round_trip")
+      iex> {:ok, restored} = cf |> Sketch.CuckooFilter.to_binary() |> Sketch.CuckooFilter.from_binary()
+      iex> Sketch.CuckooFilter.member?(restored, "round_trip")
       true
   """
   @spec to_binary(t()) :: binary()
@@ -314,15 +360,20 @@ defmodule Sketch.CuckooFilter do
   Returns `{:ok, cuckoo_filter}` on success or `{:error, :invalid_binary}`
   on failure.
 
-  The default hash function (`&Sketch.Hash.hash32/1`) and a fresh PRNG seed
+  The default hash function (built-in 32-bit hash) and a fresh PRNG seed
   are used for the restored filter. Pass `:hash_fn` or `:seed` in `opts` to
   override.
 
   ## Options
 
     * `:hash_fn` — a 1-arity hash function to attach to the deserialized
-      filter. Defaults to `&Sketch.Hash.hash32/1`.
+      filter. Defaults to the built-in 32-bit hash.
     * `:seed` — PRNG seed for the restored filter.
+
+  ## Returns
+
+    * `{:ok, t()}` — the deserialized filter.
+    * `{:error, :invalid_binary}` — if the binary is malformed or invalid.
 
   ## Examples
 

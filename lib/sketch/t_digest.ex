@@ -119,6 +119,14 @@ defmodule Sketch.TDigest do
       iex> td = Sketch.TDigest.new(50, buffer_limit: 100)
       iex> td.buffer_limit
       100
+
+  ## Raises
+
+    * `FunctionClauseError` if `delta` is not a positive number.
+
+  ## Returns
+
+  A new, empty `%Sketch.TDigest{}` struct ready to accept data via `add/3`.
   """
   @spec new(number(), keyword()) :: t()
   def new(delta \\ 100, opts \\ []) when is_number(delta) and delta > 0 do
@@ -158,6 +166,16 @@ defmodule Sketch.TDigest do
       iex> td = Sketch.TDigest.add(td, 10.0, 5)
       iex> Sketch.TDigest.count(td)
       5.0
+
+  ## Raises
+
+    * `FunctionClauseError` if `value` is not a number, or `weight` is not a positive number.
+
+  ## Returns
+
+  An updated `%Sketch.TDigest{}` struct with the new value incorporated.
+  If the internal buffer has reached its limit, the returned struct will
+  have been automatically compressed.
   """
   @spec add(t(), number(), number()) :: t()
   def add(%__MODULE__{} = td, value, weight \\ 1)
@@ -220,6 +238,11 @@ defmodule Sketch.TDigest do
       iex> td = Sketch.TDigest.add(td, 42.0)
       iex> Sketch.TDigest.percentile(td, 0.5)
       42.0
+
+  ## Returns
+
+  The estimated value at quantile `q` as a float, or `nil` if the digest
+  is empty.
   """
   @spec percentile(t(), float()) :: float() | nil
   def percentile(%__MODULE__{total_weight: tw}, _q) when tw == 0.0, do: nil
@@ -256,6 +279,10 @@ defmodule Sketch.TDigest do
       iex> td = Sketch.TDigest.new() |> Sketch.TDigest.add(5.0) |> Sketch.TDigest.add(3.0) |> Sketch.TDigest.add(7.0)
       iex> Sketch.TDigest.min(td)
       3.0
+
+  ## Returns
+
+  The minimum value as a float, or `nil` if the digest is empty.
   """
   @spec min(t()) :: float() | nil
   def min(%__MODULE__{min: min}), do: min
@@ -274,6 +301,10 @@ defmodule Sketch.TDigest do
       iex> td = Sketch.TDigest.new() |> Sketch.TDigest.add(5.0) |> Sketch.TDigest.add(3.0) |> Sketch.TDigest.add(7.0)
       iex> Sketch.TDigest.max(td)
       7.0
+
+  ## Returns
+
+  The maximum value as a float, or `nil` if the digest is empty.
   """
   @spec max(t()) :: float() | nil
   def max(%__MODULE__{max: max}), do: max
@@ -294,6 +325,11 @@ defmodule Sketch.TDigest do
       iex> td = Enum.reduce(1..50, td, fn x, acc -> Sketch.TDigest.add(acc, x) end)
       iex> Sketch.TDigest.count(td)
       50.0
+
+  ## Returns
+
+  The total weight as a float. When all values are added with the default
+  weight of 1, this equals the number of observations.
   """
   @spec count(t()) :: float()
   def count(%__MODULE__{total_weight: tw}), do: tw
@@ -309,6 +345,10 @@ defmodule Sketch.TDigest do
       iex> td = Sketch.TDigest.add(td, 10.0) |> Sketch.TDigest.add(20.0) |> Sketch.TDigest.add(30.0)
       iex> Sketch.TDigest.median(td)
       20.0
+
+  ## Returns
+
+  The estimated median as a float, or `nil` if the digest is empty.
   """
   @spec median(t()) :: float() | nil
   def median(%__MODULE__{} = td), do: percentile(td, 0.5)
@@ -340,6 +380,11 @@ defmodule Sketch.TDigest do
       1.0
       iex> Sketch.TDigest.max(merged)
       100.0
+
+  ## Returns
+
+  A new `%Sketch.TDigest{}` struct containing all data from both input
+  digests, compressed using the `delta` from the first digest.
   """
   @spec merge(t(), t()) :: t()
   def merge(%__MODULE__{} = td1, %__MODULE__{} = td2) do
@@ -382,12 +427,16 @@ defmodule Sketch.TDigest do
 
   Each centroid is encoded as two big-endian float-64 values (mean, weight).
 
+  ## Returns
+
+  A binary containing the serialized t-digest data.
+
   ## Examples
 
       iex> td = Sketch.TDigest.new() |> Sketch.TDigest.add(1.0) |> Sketch.TDigest.add(2.0)
-      iex> bin = Sketch.TDigest.to_binary(td)
-      iex> is_binary(bin)
-      true
+      iex> {:ok, restored} = td |> Sketch.TDigest.to_binary() |> Sketch.TDigest.from_binary()
+      iex> Sketch.TDigest.count(restored)
+      2.0
   """
   @spec to_binary(t()) :: binary()
   def to_binary(%__MODULE__{} = td) do
@@ -415,7 +464,10 @@ defmodule Sketch.TDigest do
   @doc """
   Deserializes a t-digest from a binary produced by `to_binary/1`.
 
-  Returns `{:ok, t_digest}` on success or `{:error, reason}` on failure.
+  ## Returns
+
+  `{:ok, t_digest}` on success or `{:error, :invalid_binary}` on failure
+  (e.g., truncated data, unknown version byte, or malformed input).
 
   ## Examples
 
@@ -460,7 +512,26 @@ defmodule Sketch.TDigest do
   # Compression (private)
   # ---------------------------------------------------------------------------
 
-  @doc false
+  @doc """
+  Flushes the internal buffer by sorting it and merging into the main
+  centroid list using the scale-function compression algorithm.
+
+  This is called automatically by `add/3` when the buffer reaches its
+  limit, by `percentile/2` before querying, and by `to_binary/1` before
+  serialization. You typically do not need to call it manually, but it
+  is available for testing and inspection purposes.
+
+  Compression alternates direction (forward / reverse) on each invocation
+  to avoid systematic bias toward either tail.
+
+  If the buffer is already empty, this is a no-op and the compression
+  direction is **not** flipped.
+
+  ## Returns
+
+  An updated `%Sketch.TDigest{}` struct with an empty buffer and a
+  compressed centroid list.
+  """
   @spec compress(t()) :: t()
   def compress(%__MODULE__{buffer: []} = td), do: td
 

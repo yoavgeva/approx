@@ -40,9 +40,37 @@ defmodule Sketch.MixProject do
 
   defp docs do
     [
-      main: "Sketch",
+      main: "readme",
       source_ref: "v#{@version}",
-      source_url: @source_url
+      source_url: @source_url,
+      extra_section: "GUIDES",
+      extras: [
+        "README.md",
+        "guides/getting-started.md",
+        "guides/choosing-a-data-structure.md",
+        "guides/distributed-merging.md",
+        "guides/accuracy-and-tuning.md",
+        "cheatsheets/sketch.cheatmd",
+        "LICENSE"
+      ],
+      groups_for_extras: [
+        Guides: [
+          "guides/getting-started.md",
+          "guides/choosing-a-data-structure.md",
+          "guides/distributed-merging.md",
+          "guides/accuracy-and-tuning.md"
+        ],
+        Cheatsheets: [
+          "cheatsheets/sketch.cheatmd"
+        ]
+      ],
+      groups_for_modules: [
+        "Set Membership": [Sketch.BloomFilter, Sketch.CuckooFilter],
+        "Frequency & Ranking": [Sketch.CountMinSketch, Sketch.TopK],
+        Cardinality: [Sketch.HyperLogLog],
+        "Sampling & Similarity": [Sketch.Reservoir, Sketch.MinHash],
+        Distribution: [Sketch.TDigest]
+      ]
     ]
   end
 end

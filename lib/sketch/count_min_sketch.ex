@@ -32,7 +32,7 @@ defmodule Sketch.CountMinSketch do
   Two independent 32-bit hashes of the element (`h1` and `h2`) are
   computed, and the position in row `i` is `rem(h1 + i * h2, width)`.
 
-  The hash function defaults to `Sketch.Hash.hash32/1` but can be
+  The hash function defaults to an internal 32-bit hash but can be
   overridden via the `:hash_fn` option for deterministic testing.
 
   ## Examples
@@ -50,7 +50,7 @@ defmodule Sketch.CountMinSketch do
   @enforce_keys [:table, :width, :depth, :hash_fn]
   defstruct [:table, :width, :depth, :hash_fn]
 
-  @typedoc "A Count-Min Sketch struct."
+  @typedoc "A Count-Min Sketch for sub-linear frequency estimation of stream elements.\n\nSee `new/3` for creation options."
   @type t :: %__MODULE__{
           table: tuple(),
           width: pos_integer(),
@@ -76,7 +76,15 @@ defmodule Sketch.CountMinSketch do
   ## Options
 
     * `:hash_fn` -- a function of arity 1 that maps a term to a
-      non-negative integer. Defaults to `&Sketch.Hash.hash32/1`.
+      non-negative integer. Defaults to the built-in 32-bit hash.
+
+  ## Returns
+
+    A `%Sketch.CountMinSketch{}` struct.
+
+  ## Raises
+
+    * `ArgumentError` if `epsilon` is not positive or `delta` is not in `(0, 1)`.
 
   ## Examples
 
@@ -116,13 +124,19 @@ defmodule Sketch.CountMinSketch do
   The `amount` must be a positive integer (negative amounts are not
   supported because they would violate the "never undercount" guarantee).
 
-  Returns an updated sketch.
-
   ## Parameters
 
     * `cms` -- the Count-Min Sketch.
     * `element` -- any term to record.
     * `amount` -- a positive integer count to add. Default: `1`.
+
+  ## Returns
+
+    An updated `%Sketch.CountMinSketch{}` struct.
+
+  ## Raises
+
+    * `ArgumentError` if `amount` is not a positive integer.
 
   ## Examples
 
@@ -206,6 +220,10 @@ defmodule Sketch.CountMinSketch do
     * `cms` -- the Count-Min Sketch.
     * `element` -- the term to query.
 
+  ## Returns
+
+    A non-negative integer representing the estimated frequency of `element`.
+
   ## Examples
 
       iex> cms = Sketch.CountMinSketch.new()
@@ -249,13 +267,14 @@ defmodule Sketch.CountMinSketch do
   sketch contains counts equivalent to having inserted all elements from
   both source sketches.
 
-  Returns `{:ok, merged}` on success, or `{:error, reason}` if the
-  dimensions do not match.
-
   ## Parameters
 
     * `cms1` -- the first Count-Min Sketch.
     * `cms2` -- the second Count-Min Sketch.
+
+  ## Returns
+
+    `{:ok, merged}` on success, or `{:error, :dimension_mismatch}` if the sketches have different `width` or `depth`.
 
   ## Examples
 
@@ -307,11 +326,15 @@ defmodule Sketch.CountMinSketch do
 
     * `cms` -- the Count-Min Sketch to serialize.
 
+  ## Returns
+
+    A binary suitable for storage or network transfer.
+
   ## Examples
 
-      iex> cms = Sketch.CountMinSketch.new(0.1, 0.1)
-      iex> binary = Sketch.CountMinSketch.to_binary(cms)
-      iex> is_binary(binary)
+      iex> cms = Sketch.CountMinSketch.new(0.1, 0.1) |> Sketch.CountMinSketch.add("test", 5)
+      iex> {:ok, restored} = cms |> Sketch.CountMinSketch.to_binary() |> Sketch.CountMinSketch.from_binary()
+      iex> Sketch.CountMinSketch.count(restored, "test") >= 5
       true
   """
   @spec to_binary(t()) :: binary()
@@ -330,20 +353,21 @@ defmodule Sketch.CountMinSketch do
   @doc """
   Deserializes a sketch from the binary format produced by `to_binary/1`.
 
-  Returns `{:ok, sketch}` on success, or `{:error, reason}` if the binary
-  is malformed or uses an unsupported version.
-
   The deserialized sketch uses the default hash function
-  (`&Sketch.Hash.hash32/1`).
+  (built-in 32-bit hash).
 
   ## Parameters
 
     * `binary` -- a binary previously produced by `to_binary/1`.
 
+  ## Returns
+
+    `{:ok, sketch}` on success, or `{:error, :invalid_binary}` if the binary is malformed or uses an unsupported version.
+
   ## Options
 
     * `:hash_fn` -- override the hash function on the restored sketch.
-      Defaults to `&Sketch.Hash.hash32/1`.
+      Defaults to the built-in 32-bit hash.
 
   ## Examples
 

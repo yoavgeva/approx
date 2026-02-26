@@ -53,7 +53,22 @@ defmodule Sketch.TopK do
   @enforce_keys [:k, :cms, :items, :hash_fn]
   defstruct [:k, :cms, :items, :hash_fn, :min_elem, :min_count]
 
-  @typedoc "A Top-K tracker struct."
+  @typedoc """
+  A Top-K frequent items tracker struct.
+
+  Fields:
+
+    * `:k` — The maximum number of top items to track.
+    * `:cms` — The underlying `Sketch.CountMinSketch` used for frequency
+      estimation.
+    * `:items` — A map of the current top-k candidates, where keys are
+      elements and values are their estimated counts.
+    * `:hash_fn` — The hash function shared with the underlying CMS.
+    * `:min_elem` — The element with the lowest estimated count currently
+      in the candidate map, or `nil` if the map is empty.
+    * `:min_count` — The estimated count of `:min_elem`, or `nil` if the
+      map is empty.
+  """
   @type t :: %__MODULE__{
           k: pos_integer(),
           cms: CountMinSketch.t(),
@@ -83,7 +98,11 @@ defmodule Sketch.TopK do
       Default: `0.01`.
     * `:hash_fn` -- a function of arity 1 that maps a term to a
       non-negative integer. Passed through to the Count-Min Sketch.
-      Defaults to `&Sketch.Hash.hash32/1`.
+      Defaults to the built-in 32-bit hash.
+
+  ## Returns
+
+  A new `%Sketch.TopK{}` struct with an empty candidate map.
 
   ## Examples
 
@@ -130,6 +149,11 @@ defmodule Sketch.TopK do
     * `element` -- any term to record.
     * `amount` -- a positive integer count to add. Default: `1`.
 
+  ## Returns
+
+  An updated `%Sketch.TopK{}` struct with the element recorded in the CMS
+  and the candidate map potentially updated.
+
   ## Examples
 
       iex> tk = Sketch.TopK.new(3)
@@ -173,6 +197,11 @@ defmodule Sketch.TopK do
 
     * `tk` -- the Top-K tracker.
 
+  ## Returns
+
+  A list of `{element, estimated_count}` tuples sorted in descending order
+  by estimated count. The list contains at most `k` entries.
+
   ## Examples
 
       iex> tk = Sketch.TopK.new(2)
@@ -205,6 +234,11 @@ defmodule Sketch.TopK do
     * `tk` -- the Top-K tracker.
     * `element` -- the term to query.
 
+  ## Returns
+
+  A non-negative integer representing the estimated frequency of `element`.
+  Returns `0` for elements that have never been added.
+
   ## Examples
 
       iex> tk = Sketch.TopK.new(3) |> Sketch.TopK.add("x", 42)
@@ -231,6 +265,11 @@ defmodule Sketch.TopK do
 
     * `tk` -- the Top-K tracker.
     * `element` -- the term to check.
+
+  ## Returns
+
+  `true` if `element` is currently in the top-k candidate map, `false`
+  otherwise.
 
   ## Examples
 
@@ -261,13 +300,16 @@ defmodule Sketch.TopK do
   Both trackers must have the same `k` value and compatible CMS dimensions
   (same `width` and `depth`).
 
-  Returns `{:ok, merged}` on success, or `{:error, reason}` if the
-  trackers are incompatible.
-
   ## Parameters
 
     * `tk1` -- the first Top-K tracker.
     * `tk2` -- the second Top-K tracker.
+
+  ## Returns
+
+  `{:ok, merged}` on success, or `{:error, :incompatible_k}` if the `k`
+  values differ, or `{:error, :dimension_mismatch}` if the underlying CMS
+  dimensions are incompatible.
 
   ## Examples
 

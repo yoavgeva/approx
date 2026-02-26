@@ -90,11 +90,21 @@ defmodule Sketch.MinHash do
   ## Options
 
     * `:hash_fn` — a 1-arity function `(term -> non_neg_integer())`.
-      Defaults to `&Sketch.Hash.hash32/1`.
+      Defaults to the built-in 32-bit hash.
     * `:seed` — an integer seed for reproducible coefficient generation.
       When omitted, a random seed is used. Passing the same seed always
       produces the same coefficients, which is required when comparing
       signatures produced on different nodes.
+
+  ## Raises
+
+    * `FunctionClauseError` if `num_hashes` is not a positive integer.
+
+  ## Returns
+
+  A `%Sketch.MinHash{}` struct containing the generated hash function
+  coefficients. The struct itself does not hold any set data; pass it to
+  `signature/2` to compute signatures for specific sets.
 
   ## Examples
 
@@ -148,6 +158,10 @@ defmodule Sketch.MinHash do
     * `mh` — a `%Sketch.MinHash{}` struct.
     * `set` — any `Enumerable` of terms (e.g., `MapSet`, list, `Stream`).
 
+  ## Returns
+
+  A `t:signature/0` tuple of `num_hashes` non-negative integers.
+
   ## Examples
 
       iex> mh = Sketch.MinHash.new(4, seed: 1)
@@ -186,12 +200,20 @@ defmodule Sketch.MinHash do
   Both signatures must have the same length (i.e., produced by MinHash
   instances with the same `num_hashes`).
 
-  Returns a float between 0.0 and 1.0 inclusive.
+  > **Note**: Unlike other Sketch modules where `similarity/2` operates on struct
+  > pairs, MinHash's `similarity/2` operates on **signature tuples** produced by
+  > `signature/2`. This is because the MinHash struct holds only the hash
+  > function coefficients, not any set data.
 
   ## Parameters
 
     * `sig1` — a signature tuple from `signature/2`.
     * `sig2` — a signature tuple from `signature/2`, same length as `sig1`.
+
+  ## Returns
+
+  A float between `0.0` and `1.0` inclusive, representing the estimated
+  Jaccard similarity `|A intersection B| / |A union B|`.
 
   ## Examples
 
@@ -229,10 +251,20 @@ defmodule Sketch.MinHash do
   The merged signature estimates the similarity of the union of the original
   sets against any other set. Both signatures must have the same length.
 
+  > **Note**: Unlike other Sketch modules where `merge/2` operates on struct
+  > pairs, MinHash's `merge/2` operates on **signature tuples** produced by
+  > `signature/2`. This is because the MinHash struct holds only the hash
+  > function coefficients, not any set data.
+
   ## Parameters
 
     * `sig1` — a signature tuple from `signature/2`.
     * `sig2` — a signature tuple from `signature/2`, same length as `sig1`.
+
+  ## Returns
+
+  A new `t:signature/0` tuple where each position holds the minimum of the
+  corresponding positions in `sig1` and `sig2`.
 
   ## Examples
 

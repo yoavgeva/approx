@@ -148,7 +148,7 @@ defmodule Sketch.ApiConsistencyTest do
 
     test "CuckooFilter round-trip returns {:ok, t()}" do
       cf = Sketch.CuckooFilter.new(100)
-      {:ok, cf} = Sketch.CuckooFilter.insert(cf, "test")
+      {:ok, cf} = Sketch.CuckooFilter.add(cf, "test")
       bin = Sketch.CuckooFilter.to_binary(cf)
       assert {:ok, %Sketch.CuckooFilter{}} = Sketch.CuckooFilter.from_binary(bin)
     end
@@ -261,6 +261,122 @@ defmodule Sketch.ApiConsistencyTest do
       result = Sketch.MinHash.merge(sig1, sig2)
       assert is_tuple(result)
       assert tuple_size(result) == 4
+    end
+  end
+
+  # ===========================================================================
+  # new/1 availability — every module exposes a constructor
+  #
+  # API contract:
+  #   - All sketch modules expose new/1 (or new/0 with defaults) returning t()
+  #
+  # Current behavior:
+  #   - BloomFilter.new/3   -> t()
+  #   - CountMinSketch.new/3 -> t()
+  #   - CuckooFilter.new/2  -> t()
+  #   - HyperLogLog.new/2   -> t()
+  #   - MinHash.new/2       -> t()
+  #   - Reservoir.new/2     -> t()
+  #   - TDigest.new/2       -> t()
+  #   - TopK.new/2          -> t()
+  # ===========================================================================
+
+  describe "new/1 availability — all modules have a constructor" do
+    test "BloomFilter.new returns a struct" do
+      assert %Sketch.BloomFilter{} = Sketch.BloomFilter.new(100)
+    end
+
+    test "CountMinSketch.new returns a struct" do
+      assert %Sketch.CountMinSketch{} = Sketch.CountMinSketch.new()
+    end
+
+    test "CuckooFilter.new returns a struct" do
+      assert %Sketch.CuckooFilter{} = Sketch.CuckooFilter.new(100)
+    end
+
+    test "HyperLogLog.new returns a struct" do
+      assert %Sketch.HyperLogLog{} = Sketch.HyperLogLog.new(4)
+    end
+
+    test "MinHash.new returns a struct" do
+      assert %Sketch.MinHash{} = Sketch.MinHash.new(4)
+    end
+
+    test "Reservoir.new returns a struct" do
+      assert %Sketch.Reservoir{} = Sketch.Reservoir.new(10)
+    end
+
+    test "TDigest.new returns a struct" do
+      assert %Sketch.TDigest{} = Sketch.TDigest.new()
+    end
+
+    test "TopK.new returns a struct" do
+      assert %Sketch.TopK{} = Sketch.TopK.new(5)
+    end
+  end
+
+  # ===========================================================================
+  # add availability — consistent element-insertion API across modules
+  #
+  # API contract:
+  #   - Modules that accumulate individual elements expose add/2 (or add/3)
+  #   - MinHash does not have add — it computes signatures over sets
+  #
+  # Current behavior:
+  #   - BloomFilter.add/2      -> t()                        (pure, always succeeds)
+  #   - CountMinSketch.add/3   -> t()                        (pure, always succeeds)
+  #   - CuckooFilter.add/2     -> {:ok, t()} | {:error, :full}  (alias for insert/2)
+  #   - HyperLogLog.add/2      -> t()                        (pure, always succeeds)
+  #   - Reservoir.add/2        -> t()                        (pure, always succeeds)
+  #   - TDigest.add/3          -> t()                        (pure, always succeeds)
+  #   - TopK.add/3             -> t()                        (pure, always succeeds)
+  #   - MinHash                -> no add (uses signature/2 over sets)
+  # ===========================================================================
+
+  describe "add availability — all element-accumulating modules have add" do
+    test "BloomFilter.add returns updated struct" do
+      bf = Sketch.BloomFilter.new(100)
+      assert %Sketch.BloomFilter{} = Sketch.BloomFilter.add(bf, "x")
+    end
+
+    test "CountMinSketch.add returns updated struct" do
+      cms = Sketch.CountMinSketch.new()
+      assert %Sketch.CountMinSketch{} = Sketch.CountMinSketch.add(cms, "x")
+    end
+
+    test "CuckooFilter.add returns {:ok, t()} on success" do
+      cf = Sketch.CuckooFilter.new(100)
+      assert {:ok, %Sketch.CuckooFilter{}} = Sketch.CuckooFilter.add(cf, "x")
+    end
+
+    test "CuckooFilter.add is equivalent to insert" do
+      cf = Sketch.CuckooFilter.new(100)
+      {:ok, cf_add} = Sketch.CuckooFilter.add(cf, "test_element")
+      {:ok, cf_insert} = Sketch.CuckooFilter.insert(cf, "test_element")
+
+      assert Sketch.CuckooFilter.member?(cf_add, "test_element")
+      assert Sketch.CuckooFilter.member?(cf_insert, "test_element")
+      assert cf_add.count == cf_insert.count
+    end
+
+    test "HyperLogLog.add returns updated struct" do
+      hll = Sketch.HyperLogLog.new(4)
+      assert %Sketch.HyperLogLog{} = Sketch.HyperLogLog.add(hll, "x")
+    end
+
+    test "Reservoir.add returns updated struct" do
+      r = Sketch.Reservoir.new(10)
+      assert %Sketch.Reservoir{} = Sketch.Reservoir.add(r, "x")
+    end
+
+    test "TDigest.add returns updated struct" do
+      td = Sketch.TDigest.new()
+      assert %Sketch.TDigest{} = Sketch.TDigest.add(td, 42.0)
+    end
+
+    test "TopK.add returns updated struct" do
+      tk = Sketch.TopK.new(5)
+      assert %Sketch.TopK{} = Sketch.TopK.add(tk, "x", 10)
     end
   end
 end

@@ -1,0 +1,232 @@
+# Sketch Cheatsheet
+
+## Bloom Filter {: .col-2}
+
+### Create
+
+```elixir
+bf = Sketch.BloomFilter.new(10_000)
+bf = Sketch.BloomFilter.new(10_000, 0.001)
+```
+
+### Add & Query
+
+```elixir
+bf = Sketch.BloomFilter.add(bf, "hello")
+Sketch.BloomFilter.member?(bf, "hello")  # => true
+Sketch.BloomFilter.member?(bf, "nope")   # => false
+```
+
+### Merge
+
+```elixir
+{:ok, merged} = Sketch.BloomFilter.merge(bf1, bf2)
+```
+
+### Serialize
+
+```elixir
+bin = Sketch.BloomFilter.to_binary(bf)
+{:ok, bf} = Sketch.BloomFilter.from_binary(bin)
+```
+
+## Cuckoo Filter {: .col-2}
+
+### Create
+
+```elixir
+cf = Sketch.CuckooFilter.new(10_000)
+```
+
+### Insert & Query
+
+```elixir
+{:ok, cf} = Sketch.CuckooFilter.insert(cf, "hello")
+Sketch.CuckooFilter.member?(cf, "hello")  # => true
+```
+
+### Delete
+
+```elixir
+{:ok, cf} = Sketch.CuckooFilter.delete(cf, "hello")
+Sketch.CuckooFilter.member?(cf, "hello")  # => false
+```
+
+### Serialize
+
+```elixir
+bin = Sketch.CuckooFilter.to_binary(cf)
+{:ok, cf} = Sketch.CuckooFilter.from_binary(bin)
+```
+
+## Count-Min Sketch {: .col-2}
+
+### Create
+
+```elixir
+cms = Sketch.CountMinSketch.new()
+cms = Sketch.CountMinSketch.new(0.001, 0.01)
+```
+
+### Add & Query
+
+```elixir
+cms = Sketch.CountMinSketch.add(cms, "page_view")
+cms = Sketch.CountMinSketch.add(cms, "page_view", 5)
+Sketch.CountMinSketch.count(cms, "page_view")  # => 6
+```
+
+### Merge
+
+```elixir
+{:ok, merged} = Sketch.CountMinSketch.merge(cms1, cms2)
+```
+
+### Serialize
+
+```elixir
+bin = Sketch.CountMinSketch.to_binary(cms)
+{:ok, cms} = Sketch.CountMinSketch.from_binary(bin)
+```
+
+## Top-K {: .col-2}
+
+### Create
+
+```elixir
+tk = Sketch.TopK.new(10)
+tk = Sketch.TopK.new(10, epsilon: 0.001, delta: 0.01)
+```
+
+### Add & Query
+
+```elixir
+tk = Sketch.TopK.add(tk, "page_a", 5)
+tk = Sketch.TopK.add(tk, "page_b", 12)
+Sketch.TopK.top(tk)        # => [{"page_b", 12}, {"page_a", 5}]
+Sketch.TopK.count(tk, "page_a")  # => 5
+Sketch.TopK.member?(tk, "page_a")  # => true
+```
+
+### Merge
+
+```elixir
+{:ok, merged} = Sketch.TopK.merge(tk1, tk2)
+```
+
+## HyperLogLog {: .col-2}
+
+### Create
+
+```elixir
+hll = Sketch.HyperLogLog.new()
+hll = Sketch.HyperLogLog.new(10)
+```
+
+### Add & Query
+
+```elixir
+hll = Sketch.HyperLogLog.add(hll, "user_123")
+hll = Sketch.HyperLogLog.add(hll, "user_456")
+Sketch.HyperLogLog.count(hll)  # => 2
+```
+
+### Merge
+
+```elixir
+{:ok, merged} = Sketch.HyperLogLog.merge(hll1, hll2)
+```
+
+### Serialize
+
+```elixir
+bin = Sketch.HyperLogLog.to_binary(hll)
+{:ok, hll} = Sketch.HyperLogLog.from_binary(bin)
+```
+
+## T-Digest {: .col-2}
+
+### Create
+
+```elixir
+td = Sketch.TDigest.new()
+td = Sketch.TDigest.new(200)
+```
+
+### Add & Query
+
+```elixir
+td = Sketch.TDigest.add(td, 42.0)
+td = Sketch.TDigest.add(td, 99.5, 3)
+Sketch.TDigest.percentile(td, 0.50)  # median
+Sketch.TDigest.percentile(td, 0.99)  # p99
+Sketch.TDigest.median(td)
+Sketch.TDigest.count(td)
+Sketch.TDigest.min(td)
+Sketch.TDigest.max(td)
+```
+
+### Merge
+
+```elixir
+merged = Sketch.TDigest.merge(td1, td2)
+```
+
+### Serialize
+
+```elixir
+bin = Sketch.TDigest.to_binary(td)
+{:ok, td} = Sketch.TDigest.from_binary(bin)
+```
+
+## Reservoir {: .col-2}
+
+### Create
+
+```elixir
+r = Sketch.Reservoir.new(100)
+r = Sketch.Reservoir.new(100, seed: 42)
+```
+
+### Add & Query
+
+```elixir
+r = Sketch.Reservoir.add(r, "event_1")
+r = Sketch.Reservoir.add_all(r, 1..10_000)
+Sketch.Reservoir.sample(r)  # => list of up to 100 elements
+Sketch.Reservoir.count(r)   # => 10_001
+```
+
+### Merge
+
+```elixir
+{:ok, merged} = Sketch.Reservoir.merge(r1, r2)
+```
+
+## MinHash {: .col-2}
+
+### Create
+
+```elixir
+mh = Sketch.MinHash.new(128)
+mh = Sketch.MinHash.new(128, seed: 42)
+```
+
+### Compute Signatures
+
+```elixir
+sig_a = Sketch.MinHash.signature(mh, MapSet.new(["cat", "dog"]))
+sig_b = Sketch.MinHash.signature(mh, MapSet.new(["cat", "bird"]))
+```
+
+### Estimate Similarity
+
+```elixir
+Sketch.MinHash.similarity(sig_a, sig_b)  # => ~0.33
+```
+
+### Merge Signatures
+
+```elixir
+merged = Sketch.MinHash.merge(sig_a, sig_b)
+```

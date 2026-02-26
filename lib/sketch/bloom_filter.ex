@@ -66,7 +66,7 @@ defmodule Sketch.BloomFilter do
   @enforce_keys [:bits, :size, :hash_count, :hash_fn]
   defstruct [:bits, :size, :hash_count, :hash_fn]
 
-  @typedoc "A Bloom filter struct."
+  @typedoc "A Bloom filter for space-efficient set membership testing.\n\nSee `new/3` for creation options."
   @type t :: %__MODULE__{
           bits: binary(),
           size: pos_integer(),
@@ -92,17 +92,27 @@ defmodule Sketch.BloomFilter do
       exclusive. Defaults to `0.01` (1 %).
     * `opts` — keyword list of options:
       * `:hash_fn` — a 1-arity function `(term -> non_neg_integer())`.
-        Defaults to `&Sketch.Hash.hash32/1`. Useful for injecting a
+        Defaults to the built-in 32-bit hash. Useful for injecting a
         deterministic hash in tests.
+
+  ## Returns
+
+    A `%Sketch.BloomFilter{}` struct.
+
+  ## Raises
+
+    * `FunctionClauseError` if `capacity` is not a positive integer or
+      `false_positive_probability` is not a float in `(0.0, 1.0)`.
 
   ## Examples
 
       iex> bf = Sketch.BloomFilter.new(100)
-      iex> bf.hash_count > 0
+      iex> bf = Sketch.BloomFilter.add(bf, "hello")
+      iex> Sketch.BloomFilter.member?(bf, "hello")
       true
 
       iex> bf = Sketch.BloomFilter.new(1_000, 0.001)
-      iex> bf.size > 0
+      iex> bf.hash_count > 0 and bf.size > 0
       true
   """
   @spec new(pos_integer(), float(), keyword()) :: t()
@@ -134,6 +144,10 @@ defmodule Sketch.BloomFilter do
   Adds an element to the Bloom filter, returning an updated filter.
 
   The element can be any Erlang/Elixir term.
+
+  ## Returns
+
+    An updated `%Sketch.BloomFilter{}` struct.
 
   ## Examples
 
@@ -169,6 +183,10 @@ defmodule Sketch.BloomFilter do
   configured false-positive rate), or `false` if the element is **definitely
   not** in the set.
 
+  ## Returns
+
+    `true` if the element might be in the set, `false` if it is definitely not.
+
   ## Examples
 
       iex> bf = Sketch.BloomFilter.new(100)
@@ -200,6 +218,10 @@ defmodule Sketch.BloomFilter do
   error tuple is returned. After merging, `member?/2` returns `true` for any
   element that was added to either filter.
 
+  ## Returns
+
+    `{:ok, merged_filter}` on success, or `{:error, :incompatible_filters}` if the filters have different `size` or `hash_count`.
+
   ## Examples
 
       iex> bf1 = Sketch.BloomFilter.new(100) |> Sketch.BloomFilter.add("a")
@@ -223,6 +245,10 @@ defmodule Sketch.BloomFilter do
   Alias for `merge/2`.
 
   Merges two compatible Bloom filters via bitwise OR.
+
+  ## Returns
+
+    `{:ok, merged_filter}` on success, or `{:error, :incompatible_filters}` if the filters have different `size` or `hash_count`.
 
   ## Examples
 
@@ -250,11 +276,15 @@ defmodule Sketch.BloomFilter do
   column, file, or network message. The `hash_fn` is **not** serialized; on
   deserialization the default hash function is restored.
 
+  ## Returns
+
+    A binary suitable for storage or network transfer.
+
   ## Examples
 
       iex> bf = Sketch.BloomFilter.new(100) |> Sketch.BloomFilter.add("test")
-      iex> bin = Sketch.BloomFilter.to_binary(bf)
-      iex> is_binary(bin)
+      iex> {:ok, restored} = bf |> Sketch.BloomFilter.to_binary() |> Sketch.BloomFilter.from_binary()
+      iex> Sketch.BloomFilter.member?(restored, "test")
       true
   """
   @spec to_binary(t()) :: binary()
@@ -268,13 +298,17 @@ defmodule Sketch.BloomFilter do
 
   Returns `{:ok, bloom_filter}` on success or `{:error, reason}` on failure.
 
-  The default hash function (`&Sketch.Hash.hash32/1`) is used for the
+  The default hash function (built-in 32-bit hash) is used for the
   restored filter. Pass `:hash_fn` in `opts` to override.
+
+  ## Returns
+
+    `{:ok, bloom_filter}` on success, or `{:error, :invalid_binary}` if the binary is malformed.
 
   ## Options
 
     * `:hash_fn` — a 1-arity hash function to attach to the deserialized
-      filter. Defaults to `&Sketch.Hash.hash32/1`.
+      filter. Defaults to the built-in 32-bit hash.
 
   ## Examples
 

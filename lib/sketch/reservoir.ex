@@ -39,6 +39,7 @@ defmodule Sketch.Reservoir do
     * **merge/2**: O(k) where k is the reservoir size
   """
 
+  @typedoc "A reservoir sampler that maintains a fixed-size uniform random sample."
   @type t :: %__MODULE__{
           samples: tuple() | list(),
           k: pos_integer(),
@@ -61,6 +62,14 @@ defmodule Sketch.Reservoir do
       Can be an integer (used as seed for `:exsss` algorithm), a tuple of
       `{algorithm, state}` as returned by `:rand.seed/1`, or omitted to use a
       fresh random seed. Defaults to a new `:exsss` seed.
+
+  ## Returns
+
+    * A `t:t/0` struct representing an empty reservoir sampler.
+
+  ## Raises
+
+    * `FunctionClauseError` if `k` is not a positive integer.
 
   ## Examples
 
@@ -95,6 +104,15 @@ defmodule Sketch.Reservoir do
   If fewer than `k` elements have been seen, the element is added directly.
   Otherwise, the element replaces a randomly chosen element in the reservoir
   with probability `k / count`, ensuring uniform sampling.
+
+  ## Parameters
+
+    * `reservoir` — the reservoir sampler.
+    * `element` — any term to add.
+
+  ## Returns
+
+    * An updated `t:t/0` struct with the element considered for sampling.
 
   ## Examples
 
@@ -153,6 +171,15 @@ defmodule Sketch.Reservoir do
   This is equivalent to calling `add/2` for each element in the enumerable,
   but expressed as a single fold operation.
 
+  ## Parameters
+
+    * `reservoir` — the reservoir sampler.
+    * `enumerable` — any enumerable of terms to add.
+
+  ## Returns
+
+    * An updated `t:t/0` struct with all elements considered for sampling.
+
   ## Examples
 
       iex> r = Sketch.Reservoir.new(5, seed: 42)
@@ -182,6 +209,14 @@ defmodule Sketch.Reservoir do
   Otherwise, returns exactly `k` elements chosen uniformly at random from all
   elements that have been added.
 
+  ## Parameters
+
+    * `reservoir` — the reservoir sampler.
+
+  ## Returns
+
+    * A list of at most `k` sampled elements.
+
   ## Examples
 
       iex> r = Sketch.Reservoir.new(5, seed: 42)
@@ -208,6 +243,14 @@ defmodule Sketch.Reservoir do
 
   This is the count of all elements seen, not the number of elements currently
   stored in the reservoir (which is at most `k`).
+
+  ## Parameters
+
+    * `reservoir` — the reservoir sampler.
+
+  ## Returns
+
+    * A non-negative integer representing the total number of elements seen.
 
   ## Examples
 
@@ -236,6 +279,11 @@ defmodule Sketch.Reservoir do
 
   Returns `{:ok, merged}` on success, or `{:error, :incompatible_size}` if the
   reservoirs have different `k` values.
+
+  ## Returns
+
+    * `{:ok, t()}` — the merged reservoir with combined count.
+    * `{:error, :incompatible_size}` — if the reservoirs have different `k` values.
 
   ## Examples
 
