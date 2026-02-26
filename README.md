@@ -186,7 +186,6 @@ daily = Approx.TDigest.merge(hour_1_digest, hour_2_digest)
 ## Key Features
 
 - **Pure Elixir** — no NIFs, no ports, no runtime dependencies
-- **Immutable** — all operations return new structures; safe for concurrent reads
 - **Mergeable** — combine structures from distributed nodes with `merge/2`
 - **Serializable** — every structure supports `to_binary/1` / `from_binary/1`
 - **Tested** — 600+ tests including statistical accuracy bounds and round-trip serialization
