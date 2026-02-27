@@ -207,9 +207,11 @@ end
 
 ## Distributed Merging
 
-Every Approx data structure supports serialization via `to_binary/1` and
+Most Approx data structures support serialization via `to_binary/1` and
 `from_binary/1`, and merging via `merge/2`. This makes it straightforward to
-build sketches on individual nodes and combine them on an aggregator.
+build sketches on individual nodes and combine them on an aggregator. See
+the [distributed merging guide](distributed-merging.md) for a per-structure
+compatibility table.
 
 Here is a complete example using HyperLogLog to count distinct users across a
 cluster:

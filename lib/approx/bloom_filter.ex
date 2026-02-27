@@ -13,6 +13,19 @@ defmodule Approx.BloomFilter do
       definitely absent
     * Deduplicating a stream of events without storing every event
 
+  ## Used in production
+
+    * **Google Bigtable** — each tablet keeps a Bloom filter per SSTable so read
+      requests for non-existent rows are rejected without touching disk
+    * **Google Chrome** — stores a compressed Bloom filter of malicious URLs
+      locally so the browser can check every navigation without a network call
+    * **Medium** — hashes already-recommended article IDs into a per-user Bloom
+      filter to avoid showing the same story twice
+    * **PostgreSQL** — during hash joins, builds a Bloom filter on the inner
+      relation and probes it to skip outer rows that have no match
+    * **Apache Cassandra** — attaches a Bloom filter to each SSTable so reads
+      skip files that definitely don't contain the requested partition key
+
   ## Creating a filter
 
   Create a filter by specifying the expected number of elements (capacity) and

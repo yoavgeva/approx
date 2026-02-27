@@ -35,6 +35,19 @@ end
 | **MinHash** | "How similar are these two sets?" | `Approx.MinHash` |
 | **t-digest** | "What is the p99 latency?" | `Approx.TDigest` |
 
+## Used in Production
+
+| Structure | Used by |
+|---|---|
+| **Bloom Filter** | Google Bigtable skips disk reads for non-existent rows, Chrome checks URLs against the Safe Browsing blocklist locally, Medium deduplicates article recommendations per user, PostgreSQL filters non-matching rows during hash joins, Cassandra skips SSTables that don't contain a partition key |
+| **Cuckoo Filter** | Cache invalidation systems track cached keys and delete them on eviction, dynamic firewalls block/unblock IPs without rebuilding the filter, session revocation stores revoked JWT IDs and removes them after expiry |
+| **Count-Min Sketch** | Twitter/X counts per-hashtag frequency to rank trending topics, Cisco routers estimate per-flow byte counts at line rate, Apache Spark Structured Streaming runs approximate frequency aggregations on unbounded streams |
+| **Top-K** | Search engines rank autocomplete suggestions by query frequency, CDNs like Akamai track most-requested URLs for cache-warming at edge PoPs, analytics dashboards stream events to display "most visited pages" in real time |
+| **HyperLogLog** | Redis `PFADD`/`PFCOUNT` counts unique items in ~12 KB per key, BigQuery's `APPROX_COUNT_DISTINCT` avoids full-table distinct scans, Presto/Trino merges per-worker sketches for `approx_distinct()`, Elasticsearch counts distinct values on billion-entry fields |
+| **Reservoir Sampling** | Datadog/New Relic agents keep a fixed-size sample of traces per interval to cap ingestion volume, load balancers sample requests for debugging without logging everything, Apache Spark merges per-partition reservoirs for approximate quantiles |
+| **MinHash** | Google computes shingle-set signatures during crawling to detect near-duplicate pages, Spotify compares playlist track-set signatures for recommendations, ad platforms estimate audience overlap between campaigns without joining raw user lists |
+| **t-digest** | Elasticsearch builds per-shard digests and merges them to return p50/p95/p99 without sorting, Datadog merges per-host latency digests for service-level percentiles, Apache Druid stores serialized digests per time chunk for fast range queries, Prometheus client libraries compute summary quantiles internally |
+
 ## Examples
 
 ### Bloom Filter — deduplicate webhook deliveries
@@ -187,7 +200,7 @@ daily = Approx.TDigest.merge(hour_1_digest, hour_2_digest)
 
 - **Pure Elixir** — no NIFs, no ports, no runtime dependencies
 - **Mergeable** — combine structures from distributed nodes with `merge/2`
-- **Serializable** — every structure supports `to_binary/1` / `from_binary/1`
+- **Serializable** — most structures support `to_binary/1` / `from_binary/1`
 - **Tested** — 600+ tests including statistical accuracy bounds and round-trip serialization
 
 ## Documentation

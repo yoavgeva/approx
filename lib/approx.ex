@@ -151,7 +151,7 @@ defmodule Approx do
 
     * **Pure Elixir** — no NIFs, no ports, no runtime dependencies
     * **Mergeable** — combine structures from distributed nodes with `merge/2`
-    * **Serializable** — every structure supports `to_binary/1` and `from_binary/1`
+    * **Serializable** — most structures support `to_binary/1` and `from_binary/1`
     * **Tested** — 600+ tests including statistical accuracy bounds and round-trip serialization
   """
 end

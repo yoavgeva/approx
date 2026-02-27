@@ -9,6 +9,24 @@ defmodule Approx.CountMinSketch do
   overestimate by at most `epsilon * N` with probability `1 - delta`,
   where `N` is the total number of items added.
 
+  ## When to use
+
+    * Counting how often each item appears in a high-volume stream
+    * Rate limiting by key (API key, IP address) without per-key counters
+    * Detecting heavy hitters in network traffic or log analysis
+
+  ## Used in production
+
+    * **Twitter/X** — increments a CMS counter for each hashtag on every tweet,
+      then queries it to rank trending topics without storing per-hashtag counters
+      for billions of tweets
+    * **Cisco** — routers hash each packet's flow ID into a CMS to estimate
+      per-flow byte counts, enabling heavy-hitter detection at line rate without
+      per-flow state
+    * **Apache Spark Structured Streaming** — uses a CMS internally for
+      approximate `GROUP BY` frequency aggregations when exact counts are too
+      expensive on unbounded streams
+
   ## Parameters
 
     * `epsilon` -- controls accuracy. Smaller values give tighter estimates

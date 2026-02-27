@@ -13,6 +13,25 @@ defmodule Approx.Reservoir do
     * If `i > k`, generate a random integer `j` in `0..i-1`. If `j < k`, replace
       the element at position `j` in the reservoir with the new element.
 
+  ## When to use
+
+    * Sampling a fixed number of items from a stream of unknown length
+    * Collecting representative log entries or requests for debugging
+    * Building training datasets from large data pipelines
+
+  ## Used in production
+
+    * **Datadog / New Relic** — each agent keeps a reservoir of K traces per
+      service; when the collection interval ends, only the sampled traces are
+      sent to the backend, keeping ingestion volume constant regardless of
+      request rate
+    * **Load balancers** — maintain a reservoir of recent requests so operators
+      can inspect a representative sample for debugging without logging every
+      request to disk
+    * **Apache Spark** — computes approximate quantiles by running reservoir
+      sampling on each partition, then merging the reservoirs to produce a
+      global quantile estimate
+
   ## Features
 
     * **Fixed memory**: Stores at most `k` elements regardless of stream size.

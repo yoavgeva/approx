@@ -7,6 +7,26 @@ defmodule Approx.HyperLogLog do
   memory than exact counting while providing estimates with a standard error
   of approximately `1.04 / sqrt(m)`, where `m = 2^precision`.
 
+  ## When to use
+
+    * Counting distinct users, sessions, or IPs across high-volume streams
+    * Aggregating cardinality estimates from distributed nodes
+    * Replacing `COUNT(DISTINCT ...)` queries when approximate results are acceptable
+
+  ## Used in production
+
+    * **Redis** — the `PFADD`/`PFCOUNT` commands maintain a HyperLogLog per key,
+      letting you count unique visitors or events in ~12 KB per counter instead
+      of storing every value in a set
+    * **Google BigQuery** — `APPROX_COUNT_DISTINCT` runs a HyperLogLog over the
+      column, returning an approximate unique count in seconds instead of doing a
+      full-table exact distinct scan
+    * **Presto/Trino** — `approx_distinct()` builds a HyperLogLog on each worker
+      node, merges the sketches, and returns a single cardinality estimate
+    * **Elasticsearch** — the cardinality aggregation hashes each field value into
+      a HyperLogLog, making it feasible to count distinct values on fields with
+      billions of unique entries
+
   ## How It Works
 
   Each element is hashed to a 32-bit value. The first `p` bits determine a

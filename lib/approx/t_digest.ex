@@ -8,6 +8,26 @@ defmodule Approx.TDigest do
   making it ideal for latency monitoring, SLA tracking, and anomaly
   detection.
 
+  ## When to use
+
+    * Tracking latency percentiles (p50, p95, p99) for SLA monitoring
+    * Computing quantile summaries over sliding time windows
+    * Aggregating percentiles from distributed nodes without raw data
+
+  ## Used in production
+
+    * **Elasticsearch** — the percentile aggregation builds a t-digest per shard,
+      merges them on the coordinator, and interpolates to return p50/p95/p99
+      estimates without sorting every document's value
+    * **Datadog** — agents on each host maintain a t-digest of request latencies,
+      then merge digests across hosts to compute service-level percentiles in
+      dashboards and SLA monitors
+    * **Apache Druid** — stores a serialized t-digest per time chunk so that
+      percentile queries over arbitrary time ranges just merge pre-built digests
+      instead of scanning raw values
+    * **Prometheus** — client libraries (e.g. `prometheus_client` for Java) use
+      t-digest internally to compute quantile values exposed as summary metrics
+
   ## How it works
 
   The t-digest maintains a sorted list of **centroids**, where each centroid

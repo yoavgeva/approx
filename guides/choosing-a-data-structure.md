@@ -55,7 +55,7 @@ Exact collections give you perfect answers, but they store every element. A `Map
 
 ### ETS
 
-ETS tables are mutable, node-local, and still O(n) in memory. They cannot be merged across nodes in a distributed system without writing custom synchronization logic. Approx structures are immutable, safely shareable across processes, and every one supports a `merge/2` operation for combining partial results from different nodes or time windows.
+ETS tables are mutable, node-local, and still O(n) in memory. They cannot be merged across nodes in a distributed system without writing custom synchronization logic. Approx structures are immutable, safely shareable across processes, and most support a `merge/2` operation for combining partial results from different nodes or time windows.
 
 **Use Approx when**: you need to aggregate across distributed nodes, want immutable data you can pass through message-passing pipelines, or need sub-linear memory.
 

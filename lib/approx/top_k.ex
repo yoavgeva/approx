@@ -6,6 +6,23 @@ defmodule Approx.TopK do
   seen in a data stream. It combines a `Approx.CountMinSketch` for frequency
   estimation with a bounded map of the current top-k candidates.
 
+  ## When to use
+
+    * Finding the most popular pages, products, or search terms in real time
+    * Building "trending now" features without storing every event
+    * Identifying heavy hitters in network traffic or API usage logs
+
+  ## Used in production
+
+    * **Search engines** — as users type, a Top-K sketch over recent queries
+      provides autocomplete suggestions ranked by frequency without storing
+      every query string
+    * **CDNs like Akamai** — edge nodes track the K most-requested URLs so
+      cache-warming logic can pre-fetch popular content to nearby PoPs
+    * **Analytics dashboards** — stream page-view events through a Top-K
+      tracker to display "most visited pages" in real time without scanning
+      the full event log
+
   ## How It Works
 
   Every element added to the tracker is first recorded in the underlying

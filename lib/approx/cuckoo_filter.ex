@@ -15,6 +15,18 @@ defmodule Approx.CuckooFilter do
       lookups access one or two contiguous cache lines)
     * You need a compact serialization format for storage or transfer
 
+  ## Used in production
+
+    * **Cache invalidation systems** — insert object IDs on cache fill and delete
+      them on eviction, so upstream services can check "is this key still cached?"
+      without a round-trip to the cache node
+    * **Dynamic firewall rules** — maintain a filter of blocked IPs that supports
+      unblocking without rebuilding the entire filter from scratch, unlike a Bloom
+      filter which would require re-inserting every remaining IP
+    * **Session revocation** — add revoked JWT token IDs to the filter so auth
+      middleware can reject them in O(1), then delete entries after the token's
+      natural expiry to keep the filter compact
+
   ## Creating a filter
 
   Provide the expected number of elements. The filter allocates buckets as

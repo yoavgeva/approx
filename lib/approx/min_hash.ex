@@ -14,6 +14,18 @@ defmodule Approx.MinHash do
     * Clustering sets by similarity without pairwise comparison
     * Locality-sensitive hashing (LSH) pipelines for approximate nearest neighbors
 
+  ## Used in production
+
+    * **Google** — during web crawling, computes a MinHash signature for each
+      page's shingle set (overlapping word n-grams) and compares signatures to
+      detect near-duplicate pages without storing or comparing full page content
+    * **Spotify** — represents each playlist as a set of track IDs, computes
+      MinHash signatures, and uses signature similarity to recommend playlists
+      that overlap with the user's listening history
+    * **Advertising platforms** — hash user-ID sets per campaign into MinHash
+      signatures, then estimate Jaccard overlap between campaign audiences to
+      measure cannibalization without joining raw user lists
+
   ## How it works
 
   A MinHash instance holds `num_hashes` random hash functions from a universal
